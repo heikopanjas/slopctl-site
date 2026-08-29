@@ -9,11 +9,11 @@ of Matthew Butterick's Triplicate B Code, used here under license and not for re
 
 ## Fonts
 
-- **Cormorant** (headings/hero only) — self-hosted via `@fontsource/cormorant` (OFL-1.1), no
-  Google Fonts request at runtime
+- **IBM Plex Sans** (headings and body) — self-hosted via `@fontsource/ibm-plex-sans`
+  (OFL-1.1), no Google Fonts request at runtime; headings differ from body only by weight
+  (semibold), not typeface
 - **Triplicate B Code** (monospace, code blocks) — licensed copy, vendored at
   `public/fonts/`, `@font-face`-declared in `src/styles/custom.css`
-- **System sans stack** — body copy
 
 No CDN calls of any kind (no Google Fonts, no Font Awesome — Starlight bundles its own icons).
 
@@ -52,11 +52,28 @@ with a dark-mode variant.
 
 ## Deployment
 
-Not yet wired up. `/Users/heiko/_repos/Site/deploy-site.sh` (the panjas.com Jekyll site)
-rsyncs with `--delete`, which would erase a `/slopctl/` subdirectory placed under its
-document root on the next parent deploy — either exclude `slopctl/` from that script, or
-deploy this site to its own directory with a dedicated nginx `location /slopctl { alias ...; }`
-block.
+Deploys the same way the parent [panjas.com](https://panjas.com) Jekyll site does: build,
+then `rsync` the static output over SSH. No nginx or Certbot changes are needed — the server
+serves `/var/www/panjas.com/` as a plain static root (`try_files $uri $uri/ $uri.html
+=404;`), so anything placed at `/var/www/panjas.com/slopctl/` is automatically live at
+`panjas.com/slopctl/`.
+
+```bash
+./serve-site.sh    # local dev server with hot reload, http://localhost:4321/slopctl
+./build-site.sh    # production build only, outputs to dist/
+./deploy-site.sh   # build, then rsync dist/ to heiko@panjas.com:/var/www/panjas.com/slopctl/
+```
+
+`deploy-site.sh` creates the remote `slopctl/` directory on first run and uses `--delete` to
+prune files removed locally — scoped to that subdirectory only, so it never touches the rest
+of `/var/www/panjas.com/`.
+
+The parent Jekyll site's own `deploy-site.sh` (`/Users/heiko/_repos/Site/deploy-site.sh`)
+excludes `slopctl/` from its `rsync --delete`, so a blog deploy never erases this site.
+
+Search only works against a real build — `astro dev` (what `serve-site.sh` runs) never
+builds the Pagefind index, so Cmd+K shows "Search is only available in production builds"
+during local dev. Use `npm run build && npm run preview` to test search locally.
 
 ## License
 
