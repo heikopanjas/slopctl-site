@@ -1,0 +1,83 @@
+---
+title: init
+description: Initialize agent instructions and skills in a project.
+---
+
+Initialize instruction files and skills for AI coding agents in your project.
+
+## Usage
+
+```bash
+# Specify at least one of --lang or --agent
+
+# With language conventions
+slopctl init --lang <language> [--agent <agent>] [--mission <text|@file>] [--force] [--dry-run]
+
+# Agent only (preserves existing language, or language-independent if fresh)
+slopctl init --agent <agent> [--mission <text|@file>] [--force] [--dry-run]
+```
+
+## Options
+
+- `--lang <string>` — programming language or framework (e.g. `c++`, `rust`, `shell`,
+  `swift`, `c`). Optional; omit for language-independent setup
+- `--agent <string>` — AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`).
+  Optional; when specified alone, preserves the existing language when switching agents
+- `--mission <string>` — custom mission statement to override the template default. Use
+  `@filename` to read from a file (e.g. `--mission @mission.md`)
+- `--force` — force overwrite of local files without confirmation; also bypasses the
+  already-initialized guard for reinstalls
+- `--dry-run` — preview changes without applying them
+
+## Examples
+
+```bash
+# Initialize a Rust project (works with all agents)
+slopctl init --lang rust
+
+# Initialize a C++ project
+slopctl init --lang c++
+
+# Agent only (AGENTS.md + agent prompts, no language files)
+slopctl init --agent cursor
+
+# Switch from Cursor to Claude (keeps existing language, e.g. Rust)
+slopctl init --agent claude
+
+# Custom mission statement (inline)
+slopctl init --lang rust --mission "A CLI tool for managing AI agent instructions"
+
+# Mission statement from a file (multi-line support)
+slopctl init --lang rust --mission @mission.md
+
+# Force overwrite existing local files
+slopctl init --lang swift --force
+
+# Preview what would be created/modified
+slopctl init --lang rust --dry-run
+```
+
+## Behavior
+
+- Uses global templates to set up agent instructions in the current project
+- If global templates don't exist, automatically downloads them from the default repository
+- Detects template version from `templates.yml`
+- **Must specify at least one** of `--lang` or `--agent`
+- **GitHub URL sources**: any `source` field in `templates.yml` can be a full GitHub URL
+  (cached by `templates --update` or fetched via tarball during `init`)
+- **With `--agent` only** (no `--lang`): creates `AGENTS.md` with mission, principles,
+  integration (no language files); preserves existing language if previously installed;
+  installs agent-associated skills; creates agent-declared directories (e.g. `.cursor/plans`)
+- **With `--lang`**: creates a single `AGENTS.md` plus language config files; installs
+  language-associated skills (own + inherited from shared groups) to the cross-client
+  directory; optional `--agent` adds agent prompts and agent skills
+- **Already-initialized guard**: when every requested `--lang`/`--agent` is already installed
+  (per the file tracker), `init` errors with guidance pointing to `slopctl update`,
+  `slopctl merge`, or `--force`; adding anything new proceeds normally
+- Checks for local modifications to `AGENTS.md` (detects if the template marker has been
+  removed); if customized and `--force` is not specified, skips `AGENTS.md`
+- Tracked files with local modifications that add no new owners are skipped (local version
+  kept); `merge` is their update path, `--force` overwrites
+- Files are placed according to `templates.yml` with placeholder resolution: `$workspace`
+  resolves to the current directory, `$userprofile` to the user's home directory
+- Merges language-specific and integration fragments into `AGENTS.md`

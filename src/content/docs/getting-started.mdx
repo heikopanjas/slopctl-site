@@ -1,0 +1,116 @@
+---
+title: Getting Started
+description: Install slopctl and initialize your first project.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+## Installation
+
+### From source
+
+```bash
+git clone https://github.com/heikopanjas/slopctl.git
+cd slopctl
+cargo build --release
+sudo cp target/release/slopctl /usr/local/bin/
+```
+
+### Using Cargo
+
+```bash
+cargo install --path .
+```
+
+## Quick start
+
+<Steps>
+
+1. Download the global template catalog.
+
+   ```bash
+   slopctl templates --update
+   ```
+
+2. Initialize your project — choose a language, an agent, or both.
+
+   ```bash
+   cd your-project
+   slopctl init --lang rust         # With Rust conventions and config files
+   slopctl init --agent cursor      # Agent prompts + skills, no language files
+   ```
+
+</Steps>
+
+With `--lang rust`, `init` will:
+
+1. Copy the main `AGENTS.md` template to your project.
+2. Merge skill-hint fragments into `AGENTS.md` so agents know skills are available.
+3. Copy language config files (`.rustfmt.toml`, `.editorconfig`).
+4. Create `UPDATES.md`, the append-only "Recent Updates & Decisions" log — entries below its
+   changelog marker are preserved on re-init and merge.
+5. Install language skills (`rust-coding-conventions`, `rust-build-commands`) and the
+   top-level skills (`git-workflow`, `semantic-versioning`, `recent-updates`) to
+   `.agents/skills/`.
+6. **Give you a single `AGENTS.md` that works with every supported agent** — Claude Code,
+   Cursor, GitHub Copilot, Codex, Mistral Vibe, OpenCode, Pi, Kiro, Goose, and Cline.
+
+<Aside type="tip">
+	Omitting `--lang` still gives you `AGENTS.md` (mission, principles, integration), `UPDATES.md`, and the top-level
+	skills — just no language-specific files. Good for documentation repositories or multi-language projects.
+</Aside>
+
+## Initialize from a custom template source
+
+```bash
+# From a local path
+slopctl templates --update --from /path/to/templates
+
+# From a GitHub URL
+slopctl templates --update --from https://github.com/user/repo/tree/branch/templates
+
+# Then initialize the project
+slopctl init --lang c++ --agent claude
+```
+
+The custom source must include a `templates.yml` file that defines the template structure —
+see [Templates & templates.yml](/slopctl/templates/).
+
+## A complete walkthrough
+
+<Steps>
+
+1. Create your project directory and initialize it.
+
+   ```bash
+   mkdir my-rust-cli && cd my-rust-cli
+   git init
+   slopctl init --lang rust --agent claude
+   ```
+
+2. Verify what was installed.
+
+   ```bash
+   slopctl status
+   ```
+
+   ```text
+   Project Status:
+     ✓ AGENTS.md: exists (customized)
+     ✓ Installed agents: claude
+     ✓ Installed languages: rust
+     ✓ Installed skills: 5
+   ```
+
+3. Start coding with any supported agent — they all read the same `AGENTS.md`.
+
+4. Later, refresh from the global catalog after `slopctl templates --update`.
+
+   ```bash
+   slopctl update
+   ```
+
+</Steps>
+
+Next: browse the [CLI command reference](/slopctl/commands/init/) or the
+[FAQ](/slopctl/faq/) for common questions.

@@ -1,0 +1,88 @@
+---
+title: remove
+description: Remove agent, language, or all managed files from a workspace.
+---
+
+Remove agent-specific or language-specific files from the current directory. Use `--purge`
+to also remove `AGENTS.md` (full cleanup).
+
+## Usage
+
+```bash
+# Remove a specific agent's files
+slopctl remove --agent <agent> [--force] [--dry-run]
+
+# Remove language disk files (e.g. .rustfmt.toml, .editorconfig)
+slopctl remove --lang <lang> [--force] [--dry-run]
+
+# Remove all agent-specific files and skills (keeps AGENTS.md)
+slopctl remove --all [--force] [--dry-run]
+
+# Remove everything including AGENTS.md (full purge)
+slopctl remove --purge [--force] [--dry-run]
+```
+
+## Options
+
+- `--agent <string>` — AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`)
+- `--lang <string>` — language to remove disk files and language-associated skills for (e.g.
+  `rust`, `c++`, `shell`, `swift`). Skips `$instructions` fragments (merged into
+  `AGENTS.md`) and `$userprofile` paths unless tracked in the workspace
+- `--all` — remove all agent-specific files and skills (keeps `AGENTS.md`). Mutually
+  exclusive with `--agent`, `--lang`, and `--purge`
+- `--purge` — remove all slopctl files including `AGENTS.md` (full cleanup). Mutually
+  exclusive with `--agent`, `--lang`, and `--all`
+- `--force` — force removal without confirmation; combined with `--purge`, also overrides the
+  customized-`AGENTS.md` preservation guard
+- `--dry-run` — preview what would be deleted without making changes
+
+## Examples
+
+```bash
+# Remove Claude-specific files with confirmation
+slopctl remove --agent claude
+
+# Remove Rust language files (.rustfmt.toml, .editorconfig, etc.)
+slopctl remove --lang rust
+
+# Remove language files and agent files together
+slopctl remove --lang rust --agent cursor
+
+# Remove all agent-specific files (keeps AGENTS.md)
+slopctl remove --all
+
+# Remove all agents with force
+slopctl remove --all --force
+
+# Remove everything including AGENTS.md (full purge)
+slopctl remove --purge
+
+# Force-purge even if AGENTS.md was customized
+slopctl remove --purge --force
+
+# Preview what would be deleted
+slopctl remove --lang rust --dry-run
+slopctl remove --purge --dry-run
+```
+
+## Behavior
+
+- Loads `templates.yml` from global storage to build the Bill of Materials (BoM)
+- `--agent`: removes agent instruction, prompt, and skill files; candidates come from the
+  BoM, tracked files solely owned by the agent, and files inside the agent's catalog
+  directories (markers, skill dir, prompt dir)
+- Removing an agent or language releases its ownership across **all** tracker entries, so
+  shared files keep correct owners and `status`/re-init stay truthful
+- `--lang`: resolves the language's complete file list via `resolve_language_files` (honors
+  `includes` chains); removes language-associated skill directories; skips `$instructions`
+  fragments; validates the language name against `templates.yml`
+- `--all`: removes all agent files and skills from all agents; **never touches `AGENTS.md`**
+- `--purge`: removes everything `--all` removes **plus** `AGENTS.md`; a customized
+  `AGENTS.md` is preserved unless `--force` is also given
+- Changelog-marker files (e.g. `UPDATES.md`) are preserved by `remove` and `--purge`
+  regardless of tracked modification status; `--purge --force` overrides
+- Only removes files that exist in the current directory; shows the list before deletion;
+  asks for confirmation unless `--force` is specified
+- Automatically cleans up empty parent directories
+- Does **not** affect global templates in the local data directory
+- Must specify at least one of `--agent`, `--lang`, `--all`, or `--purge`

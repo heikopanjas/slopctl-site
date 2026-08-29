@@ -1,0 +1,67 @@
+---
+title: update
+description: Refresh installed templates from the local global template cache.
+---
+
+Refresh installed templates from the **local global template cache**. Without selectors,
+`slopctl update` refreshes the whole workspace: every installed language and detected agent
+is resolved, missing or deleted tracked files are restored, unmodified files are brought up
+to the cached template state, and locally modified or untracked files are skipped with a
+report (use `--force` to overwrite them). With `--file`/`--skill` selectors it refreshes only
+the selected targets.
+
+Run `slopctl templates --update` first to refresh the global catalog. `update` never fetches
+from GitHub or other remote sources — it copies only the selected targets from that cache
+into the workspace.
+
+Files and skills are routed to the same workspace locations as `init`. The scope defaults to
+the installed languages (from the file tracker) and the agents detected in the workspace;
+override with `--lang`/`--agent`. Explicitly selected targets are overwritten directly, but a
+customized or untracked selected target is an error unless `--force` is given; in
+full-workspace mode such files are skipped with a report instead.
+
+In full-workspace mode, a missing agent instruction or prompt file is only recreated for an
+agent that owns at least one tracker entry — never for an agent known solely from its marker
+directory. Files it refuses to create for that reason are reported per agent with a
+`slopctl init --agent <name>` hint, and `--force` does not override this.
+
+When a skill is refreshed, slopctl-managed files removed upstream are also deleted from the
+workspace and pruned from the tracker. User-added files inside the skill directory that
+slopctl doesn't track are preserved.
+
+This differs from `templates --update` (which downloads/updates the *global* catalog) and
+from `init` (which installs something *new*: a language or an agent). `AGENTS.md` and
+changelog-marker files (e.g. `UPDATES.md`) are never refreshed by `update`, under any flag;
+use `merge`.
+
+## Usage
+
+```bash
+slopctl templates --update                            # Refresh global cache first
+slopctl update                                      # Refresh the whole workspace
+slopctl update --dry-run                            # Preview the full refresh
+slopctl update --force                              # Also overwrite customized files
+slopctl update --skill rust-coding-conventions      # Refresh a single skill
+slopctl update --file .rustfmt.toml                 # Refresh a single file
+slopctl update --skill git-workflow --file .editorconfig   # Refresh several at once
+slopctl update --file .editorconfig --lang rust     # Override the language scope
+slopctl update --skill init-session --agent cursor  # Override the agent scope
+slopctl update --file .rustfmt.toml --force         # Overwrite a customized file
+slopctl update --skill git-workflow --dry-run       # Preview without writing
+```
+
+## Options
+
+- `--file <path>` — workspace file path to refresh (repeatable)
+- `--skill` / `-s <name>` — skill name to refresh (repeatable)
+- `--lang` / `-l` — language scope override (defaults to the installed languages)
+- `--agent` / `-a` — AI coding agent scope override (defaults to detected agents)
+- `--force` / `-f` — overwrite locally customized or untracked files
+- `--dry-run` / `-n` — preview changes without applying them
+
+A `--file` path that lives inside a skill directory is rejected with a hint to use
+`--skill <name>` instead — skills refresh as whole units so upstream-removed files get
+pruned. Without `--file`/`--skill` the whole workspace is refreshed. `AGENTS.md` and
+changelog-marker files are excluded from both modes, under `--force` too; `--file UPDATES.md`
+is a hard error; `merge` is the only command that refreshes the template half above the
+marker.

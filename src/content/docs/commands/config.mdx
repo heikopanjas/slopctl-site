@@ -1,0 +1,109 @@
+---
+title: config
+description: Manage persistent configuration with Git-style dotted keys.
+---
+
+Manage persistent configuration settings using Git-style dotted keys.
+
+Configuration supports two scopes: **workspace** (per-project, stored in
+`.slopctl/config.yml`) and **global** (user-wide, stored in `~/.config/slopctl/config.yml`).
+Without `--global`, writes target the workspace config. Reads return the *effective* merged
+value: workspace wins, global is the fallback.
+
+## Usage
+
+```bash
+slopctl config --set <key> <value>    # Set a workspace configuration value
+slopctl config --global --set <k> <v> # Set a global configuration value
+slopctl config <key>                  # Get effective value (workspace > global)
+slopctl config --list                 # List effective configuration with origin labels
+slopctl config --global --list        # List global configuration only
+slopctl config --delete <key>         # Delete from workspace configuration
+slopctl config --global --delete <k>  # Delete from global configuration
+```
+
+## Options
+
+- `<key>` — configuration key to get (e.g. `templates.uri`)
+- `--set <key> <value>` (`-s`) — set a configuration value
+- `--list` (`-l`) — list all configuration values
+- `--delete <key>` (`-d`) — delete a configuration key
+- `--global` (`-g`) — operate on the global config instead of the workspace config
+
+Configuration keys follow the convention `<command>.<parameter>`, e.g. `templates.uri`
+configures the `templates` command and `merge.provider` configures the `merge` command.
+
+`templates.uri`, `templates.fallbackUri`, `agents.uri`, and `agents.fallbackUri` accept
+either a remote URL or a local filesystem path, so the same key works for
+`https://github.com/...` sources and local catalog directories.
+
+## Examples
+
+```bash
+# Set a workspace-local template source (only affects this project)
+slopctl config --set templates.uri /Users/me/work/my-templates
+
+# Set a global template source (shared across all projects)
+slopctl config --global --set templates.uri https://github.com/myteam/templates/tree/main/templates
+
+# Get effective value (workspace overrides global)
+slopctl config templates.uri
+
+# List effective configuration with [workspace] / [global] origin labels
+slopctl config --list
+
+# Delete workspace override (falls back to global value)
+slopctl config --delete templates.uri
+
+# Set fallback source for resilience (global)
+slopctl config --global --set templates.fallbackUri https://github.com/heikopanjas/slopctl-templates/tree/develop/templates
+
+# Set default LLM provider for merge (workspace-specific)
+slopctl config --set merge.provider anthropic
+
+# Set default model for merge (global default)
+slopctl config --global --set merge.model claude-sonnet-4-6
+```
+
+## Valid configuration keys
+
+- `templates.uri` — default template source (URL or local filesystem path) used by
+  `templates --update` and `init` when `--from` is not specified
+- `templates.fallbackUri` — fallback source used when the primary source fails or is
+  unreachable
+- `agents.uri` — default agent defaults source used by `agents --update`; also used by
+  `templates --update` when bootstrapping missing agent defaults
+- `agents.fallbackUri` — fallback source for agent defaults
+- `merge.provider` — default LLM provider for `merge` (`openai`, `anthropic`, `ollama`,
+  `mistral`)
+- `merge.model` — default model for `merge` (e.g. `gpt-5.6-terra`, `claude-sonnet-5`)
+- `models.uri` — default model defaults source used by `models --update`
+- `models.fallbackUri` — fallback source for model defaults
+
+## Configuration file locations
+
+- Workspace: `<project>/.slopctl/config.yml` (committed to repo alongside `tracker.yml`)
+- Global (Linux): `$XDG_CONFIG_HOME/slopctl/config.yml` or `~/.config/slopctl/config.yml`
+- Global (macOS): `~/.config/slopctl/config.yml`
+
+## Precedence
+
+Consumer commands (`templates --update`, `agents --update`, `models --update`, `init`,
+`update`, `merge`) read the effective merged config. For each key, the workspace value wins;
+if not set there, the global value is used. This lets you set shared defaults globally while
+overriding per-project as needed.
+
+## Behavior
+
+- Configuration persists between sessions
+- `templates --update` uses `templates.uri` if set and `--from` not specified
+- `agents --update` uses `agents.uri` if set and `--from` not specified
+- `init` uses `templates.uri` when downloading missing global templates
+- If the primary source fails and a `fallbackUri` is configured, slopctl automatically tries
+  the fallback
+- If missing during `templates --update`, `agent-defaults.yml` (and `model-defaults.yml`) is
+  bootstrapped from `agents.uri` (`models.uri`), then its fallback, then the default
+  `slopctl-templates` repository
+- An empty configuration file is valid (all defaults used)
+- `--list` (without `--global`) annotates each key with `[workspace]` or `[global]` to show
+  its origin
