@@ -1,0 +1,61 @@
+---
+title: slopctl
+tableOfContents: false
+template: splash
+hero:
+  tagline: One AGENTS.md, ten coding agents, zero drift. A Rust CLI that installs, updates, and synchronizes agent instructions and skills across every workspace you touch.
+  actions:
+    - text: Get Started
+      link: /slopctl/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/heikopanjas/slopctl
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<Card title="One source of truth" icon="document">
+		A single `AGENTS.md` works across Claude Code, Cursor, GitHub Copilot, Codex, Mistral Vibe, OpenCode, Pi, Kiro,
+		Goose, and Cline — following the [agents.md](https://agents.md) community standard.
+	</Card>
+	<Card title="Agent Skills built in" icon="puzzle">
+		Define [Agent Skills](https://agentskills.io) per agent, per language, or as top-level entries. Local
+		directories and full GitHub URLs are both supported.
+	</Card>
+	<Card title="Data-driven catalog" icon="setting">
+		Agents and languages are entries in YAML, not compiled-in code. Add a new one by editing `templates.yml` —
+		no rebuild required.
+	</Card>
+	<Card title="AI-assisted merge" icon="magnifier">
+		Reconcile customized files with updated templates using OpenAI, Anthropic, Ollama, or Mistral — never a blind
+		overwrite.
+	</Card>
+	<Card title="Append-only decision log" icon="list-format">
+		`UPDATES.md` keeps a "Recent Updates & Decisions" history below a changelog marker that `init`, `update`, and
+		`merge` never overwrite.
+	</Card>
+	<Card title="Governance guardrails" icon="approve-check">
+		No auto-commits, ever. Every destructive operation requires explicit human confirmation.
+	</Card>
+</CardGrid>
+
+## Quick start
+
+```bash
+# 1. Download the global template catalog
+slopctl templates --update
+
+# 2. Initialize your project
+cd your-project
+slopctl init --lang rust --agent claude
+```
+
+That single `init` call copies the main `AGENTS.md` template, merges in skill-hint fragments,
+installs language config files, and sets up Agent Skills under `.agents/skills/` — ready for
+every supported agent, not just the one you named.
+
+[Read the full getting-started guide →](/slopctl/getting-started/)

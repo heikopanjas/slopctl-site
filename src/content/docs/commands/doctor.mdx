@@ -1,0 +1,83 @@
+---
+title: doctor
+description: Check the workspace for stale or broken managed files.
+---
+
+Check the workspace for stale or broken managed files and optionally fix them. With
+`--smart`, additionally run LLM-assisted linting of `AGENTS.md` for contradictions, stale
+references, and unclear instructions.
+
+## Usage
+
+```bash
+slopctl doctor [--fix] [--dry-run] [--verbose] [--smart]
+```
+
+## Options
+
+- `--fix` — automatically repair detected issues where safe to do so
+- `--dry-run` — preview what would be fixed without applying changes
+- `--verbose` — print every checked file and its result during the scan
+- `--smart` — run AI-assisted linting of `AGENTS.md` after the standard checks; provider
+  resolved from config `merge.provider` or env API keys
+
+## Issue categories
+
+| Kind | Condition | Symbol |
+| --- | --- | --- |
+| **Missing** | File is tracked but no longer exists on disk (stale tracker entry) | `✗` |
+| **Unmerged** | `AGENTS.md` exists but still contains the template marker | `✗` |
+| **Modified** | File exists but SHA changed since installation (informational; `AGENTS.md` and changelog-marker files are excluded since customization is expected) | `!` |
+
+**What `--fix` repairs:**
+
+- **Missing** — prunes the stale file-tracker entry; no filesystem change, run
+  `slopctl update` to restore the file
+- **Unmerged** — strips the template marker from the file in place, marking it as customized
+  so future installs won't silently overwrite it; run `slopctl merge` afterward for a full
+  re-merge with language sections
+- **Modified** — no automatic fix; shown as informational. Use `slopctl merge` to combine, or
+  `slopctl update --force` to overwrite if intended
+
+## Examples
+
+```bash
+# Check workspace for issues
+slopctl doctor
+
+# Show every file checked alongside its result
+slopctl doctor --verbose
+
+# Automatically fix what can be fixed
+slopctl doctor --fix
+
+# Preview fixes without applying them
+slopctl doctor --fix --dry-run
+
+# Run AI-assisted linting of AGENTS.md after the standard checks
+slopctl doctor --smart
+```
+
+## Example output (with `--verbose` and issues present)
+
+```text
+Checking workspace files:
+
+  ✓ OK:       .cursor/commands/init-session.md
+  ✓ OK:       .agents/skills/git-workflow/SKILL.md
+  ✗ Missing:  .editorconfig
+  ✗ Unmerged: AGENTS.md
+  ! Modified: .rustfmt.toml
+
+Issues found:
+
+  ✗ Missing:  .editorconfig (tracked but deleted)
+  ✗ Unmerged: AGENTS.md (template marker still present)
+  ! Modified: .rustfmt.toml (changed since install)
+
+  ✗ 1 stale tracker entry
+  ✗ 1 file with unmerged template marker
+  ! 1 modified file (no automatic fix available)
+
+→ Run 'slopctl doctor --fix' to automatically fix issues
+```
