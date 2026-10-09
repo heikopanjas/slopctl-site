@@ -1,0 +1,53 @@
+---
+import { REPO, SITE_REPO } from '../data/site';
+const { title, description, bodyClass = '', active = '' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const nav = [
+	['install', 'Install', `${base}#install`],
+	['commands', 'Commands', `${base}#commands`],
+	['agents', 'Agents', `${base}#agents`],
+	['templates', 'Templates', `${base}#templates`],
+	['faq', 'FAQ', `${base}#faq`]
+];
+const favicon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0a0c0f"/><circle cx="16" cy="16" r="7" fill="#ffb454"/></svg>');
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{title}</title>
+<meta name="description" content={description}>
+<meta name="theme-color" content="#0a0c0f">
+<meta property="og:title" content={title}>
+<meta property="og:description" content={description}>
+<link rel="icon" href={favicon}>
+<link rel="apple-touch-icon" href={`${base}apple-touch-icon.png`}>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href={`${base}assets/style.css`}>
+<link rel="stylesheet" href={`${base}assets/site.css`}>
+<script is:inline>document.documentElement.classList.add("js")</script>
+<script is:inline src={`${base}assets/app.js`} defer></script>
+</head>
+<body class={bodyClass}>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar" id="topbar">
+  <a class="brand" href={base}><span class="lamp" id="lamp"></span><span class="brand-text">SLOP <b>✦</b> CTL</span></a>
+  <nav class="chapters" aria-label="Sections">{nav.map(([k, l, h]) => <a href={h} class={k === active ? 'active' : undefined}>{l}</a>)}</nav>
+  <div class="top-actions">
+    <a class="chip" href={`${REPO}/releases`}><span class="chip-dot dot-amber"></span>Releases</a>
+    <a class="chip" href={REPO}><span class="chip-dot"></span>GitHub</a>
+  </div>
+</header>
+<main id="main"><slot /></main>
+<footer class="footer">
+  <div><b>slopctl</b><br><span class="mono-fine">agents.md manager</span></div>
+  <div>
+    <p>A Rust CLI that installs, updates, and synchronizes agent instructions and skills across every workspace you touch.</p>
+    <p class="fine"><a href={REPO}>slopctl</a> · <a href={SITE_REPO}>Site source</a> · MIT © 2026 Heiko Panjas</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,6 +1,8 @@
 ---
 title: init
-description: Initialize agent instructions and skills in a project.
+summary: "Initialize agent instructions and skills in a project."
+group: setup
+order: 4
 ---
 
 Initialize instruction files and skills for AI coding agents in your project.

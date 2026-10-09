@@ -1,6 +1,8 @@
 ---
 title: completions
-description: Generate shell completion scripts.
+summary: "Generate shell completion scripts."
+group: inspect
+order: 11
 ---
 
 Generate shell completion scripts for various shells.

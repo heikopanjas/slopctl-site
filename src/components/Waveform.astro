@@ -1,0 +1,15 @@
+---
+const w = 1600;
+const pts: string[] = [];
+let seed = 7;
+const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const amps = Array.from({ length: 40 }, () => 0.25 + rand() * 0.75);
+for (let x = 0; x <= w * 2; x += 8) {
+	const i = Math.floor((x % w) / (w / amps.length));
+	const a = amps[i] * 38;
+	const y = 60 + Math.sin(x / 23) * a * Math.sin((x % w) / (w / Math.PI));
+	pts.push(`${x},${y.toFixed(1)}`);
+}
+const d = `M${pts.join(' L')}`;
+---
+<svg class="scope" viewBox={`0 0 ${w} 120`} preserveAspectRatio="none" aria-hidden="true"><g class="scope-drift"><path d={d} class="trace"/><path d={d} class="trace trace-glow"/></g><line x1="0" y1="60" x2={w} y2="60" class="scope-axis"/></svg>

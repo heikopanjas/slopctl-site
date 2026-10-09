@@ -1,6 +1,8 @@
 ---
 title: update
-description: Refresh installed templates from the local global template cache.
+summary: "Refresh installed templates from the local global template cache."
+group: maintain
+order: 5
 ---
 
 Refresh installed templates from the **local global template cache**. Without selectors,

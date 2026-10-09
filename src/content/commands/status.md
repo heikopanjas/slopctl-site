@@ -1,6 +1,8 @@
 ---
 title: status
-description: Show the current slopctl status of a project.
+summary: "Show the current slopctl status of a project."
+group: inspect
+order: 9
 ---
 
 Display the current status of slopctl in the project.

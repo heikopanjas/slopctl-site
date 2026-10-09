@@ -1,0 +1,28 @@
+/* slopctl additions on top of the shared style.css */
+.lamp{background:var(--green);box-shadow:0 0 0 3px rgba(139,220,108,.16),0 0 16px 3px rgba(139,220,108,.5)}
+.term{margin:14px 0 0;background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.term-bar{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+.term-bar i{width:8px;height:8px;border-radius:50%;background:#2a2f36}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font:500 13.5px/1.7 var(--mono);color:var(--soft)}
+.term .c{color:var(--faint)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}
+.steps>li{counter-increment:s;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:20px clamp(16px,2.4vw,26px)}
+.steps>li::before{content:counter(s,decimal-leading-zero);font:600 12px/1 var(--mono);letter-spacing:.14em;color:var(--amber);border:1px solid rgba(255,180,84,.4);border-radius:6px;padding:4px 7px;display:inline-block;margin-bottom:12px}
+.steps h3{font-family:var(--serif);font-weight:400;font-size:28px;margin-bottom:6px}
+.steps p{color:var(--soft);margin:0}
+.group-label{margin:44px 0 16px}
+.group-label:first-child{margin-top:0}
+.prose{max-width:860px;color:var(--soft);font-size:16px}
+.prose h2{font-family:var(--serif);font-weight:400;font-size:clamp(30px,3.6vw,44px);margin:44px 0 14px;color:var(--text)}
+.prose ul,.prose ol{padding-left:1.3em}
+.prose li{margin-bottom:.5em}
+.prose pre{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto;font:500 13.5px/1.7 var(--mono);color:var(--soft)}
+.prose pre code{background:none;border:0;padding:0;font:inherit;color:inherit;overflow-wrap:normal}
+.prose table{display:block;overflow-x:auto;border-collapse:collapse;font-size:14.5px}
+.prose th,.prose td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.prose th{font:600 10.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.cov-row.langs{grid-template-columns:minmax(120px,1fr) 2fr}
+.cov-cell.cov-on{--k:var(--teal)}
+.faq-q{display:block}
+.faq-a{padding:10px 0 4px 22px;color:var(--soft);font-size:15.5px}
+.faq-a p:last-child{margin-bottom:0}

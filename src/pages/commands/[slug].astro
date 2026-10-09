@@ -1,0 +1,37 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import Kicker from '../../components/Kicker.astro';
+import { REPO, accents } from '../../data/site';
+
+export async function getStaticPaths() {
+	const all = (await getCollection('commands')).sort((a, b) => a.data.order - b.data.order);
+	return all.map((entry, i) => ({
+		params: { slug: entry.id },
+		props: { entry, i, prev: all[(i - 1 + all.length) % all.length], next: all[(i + 1) % all.length], total: all.length }
+	}));
+}
+const { entry, i, prev, next, total } = Astro.props;
+const { Content } = await render(entry);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const label = { setup: 'Set up', maintain: 'Maintain', inspect: 'Inspect' }[entry.data.group];
+---
+<Layout title={`slopctl ${entry.data.title} · slopctl`} description={entry.data.summary}>
+<section class="section agent-hero" style={`--c:var(--${accents[i % accents.length]})`}>
+  <div class="section-head">
+    <Kicker num={`${String(i + 1).padStart(2, '0')}/${total}`} text="Command" />
+    <div class="unit-badge">{label}</div>
+    <h1>{entry.data.title}</h1>
+    <p class="unit-hw home">{entry.data.summary}</p>
+    <div class="hero-cta">
+      <a class="btn btn-ghost" href={`${base}#commands`}>All commands</a>
+      <a class="btn btn-ghost" href={REPO}>GitHub ↗</a>
+    </div>
+  </div>
+  <div class="prose"><Content /></div>
+  <nav class="pager" aria-label="Commands">
+    <a href={`${base}commands/${prev.id}/`}><span class="pair-label">← Previous</span>{prev.data.title}</a>
+    <a href={`${base}commands/${next.id}/`} class="next"><span class="pair-label">Next →</span>{next.data.title}</a>
+  </nav>
+</section>
+</Layout>

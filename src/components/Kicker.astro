@@ -1,0 +1,4 @@
+---
+const { num, text, extra = '' } = Astro.props;
+---
+<div class={`kicker ${extra}`}><span class="num">{num}</span>{text}</div>

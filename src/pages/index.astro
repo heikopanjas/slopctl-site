@@ -1,0 +1,153 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import Kicker from '../components/Kicker.astro';
+import Waveform from '../components/Waveform.astro';
+import Term from '../components/Term.astro';
+import { REPO, TEMPLATES_REPO, accents, tldr, standards, steps, agents, coverageCols, languages, templatesCode, faq } from '../data/site';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const commands = (await getCollection('commands')).sort((a, b) => a.data.order - b.data.order);
+const groups = [
+	['setup', 'Set up'],
+	['maintain', 'Maintain'],
+	['inspect', 'Inspect']
+] as const;
+const ac = (i: number) => `var(--${accents[i % accents.length]})`;
+---
+<Layout
+	title="slopctl: one AGENTS.md for every coding agent"
+	description="A Rust CLI that installs, updates, and synchronizes agent instructions and skills across every workspace you touch."
+	bodyClass="home"
+>
+<section class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-grid" aria-hidden="true"></div>
+  <Waveform />
+  <div class="hero-inner">
+    <p class="eyebrow">Rust CLI · agents.md standard · MIT</p>
+    <h1>One AGENTS.md, <em>every</em> agent.</h1>
+    <p class="lede">One AGENTS.md, ten coding agents, zero drift. slopctl installs, updates, and synchronizes agent instructions and skills across every workspace you touch.</p>
+    <div class="hero-cta">
+      <a class="btn btn-hot" href="#install"><span class="btn-lamp"></span>Get started</a>
+      <a class="btn btn-ghost" href={REPO}>View on GitHub ↗</a>
+    </div>
+  </div>
+  <div class="meters">
+    <div class="meter"><b>{agents.length}</b><span>agents supported</span></div>
+    <div class="meter"><b>{languages.length}</b><span>languages shipped</span></div>
+    <div class="meter"><b>{commands.length}</b><span>CLI commands</span></div>
+    <div class="meter"><b>4</b><span>merge providers</span></div>
+    <div class="meter"><b>0</b><span>auto-commits</span></div>
+  </div>
+  <div class="hero-foot"><span>● ON AIR</span><span>AGENTS.MD STANDARD</span><span>SCROLL ↓</span></div>
+</section>
+
+<section class="section" id="short">
+  <div class="section-head"><Kicker num="00" text="The short version" />
+    <h2>Write it <em>once</em>.</h2>
+    <p class="section-intro">Every agent invents its own instruction files. slopctl keeps one source of truth and routes it to wherever each agent looks.</p>
+  </div>
+  <div class="tldr-grid">
+    {tldr.map((t, i) => <article class="tl reveal" style={`--c:${ac(i)}`}><span class="tl-tag">{t.tag}</span><h3>{t.title}</h3><p>{t.body}</p></article>)}
+  </div>
+  <div class="std-grid" style="margin-top:16px">
+    {standards.map((t, i) => <article class="tl std reveal" style={`--c:${ac(i + 4)}`}><span class="tl-tag">{t.tag}</span><h3>{t.title}</h3><p>{t.body}</p></article>)}
+  </div>
+</section>
+
+<section class="section" id="install">
+  <div class="section-head"><Kicker num="01" text="Install" />
+    <h2>Four steps, <em>one</em> file.</h2>
+    <p class="section-intro">From a clean checkout to a configured workspace in under a minute.</p>
+  </div>
+  <ol class="steps">
+    {steps.map((s) => <li class="reveal"><h3>{s.title}</h3><p>{s.body}</p><Term code={s.code} /></li>)}
+  </ol>
+</section>
+
+<section class="section" id="commands">
+  <div class="section-head"><Kicker num="02" text="Commands" />
+    <h2>{commands.length} commands, <em>one</em> rack.</h2>
+    <p class="section-intro">Open any unit for usage, options, examples and behavior.</p>
+  </div>
+  {groups.map(([key, label]) => (
+    <>
+      <div class="kicker small group-label">{label}</div>
+      <div class="rack">
+        {commands.filter((c) => c.data.group === key).map((c) => (
+          <a class="rack-card reveal" href={`${base}commands/${c.id}/`} style={`--c:${ac(c.data.order - 1)}`}>
+            <span class="rack-num">{String(c.data.order).padStart(2, '0')}</span>
+            <span class="unit-role">{label}</span>
+            <h3>{c.data.title}</h3>
+            <span class="unit-hw">{c.data.summary}</span>
+          </a>
+        ))}
+      </div>
+    </>
+  ))}
+</section>
+
+<section class="section" id="agents">
+  <div class="section-head"><Kicker num="03" text="Agents & languages" />
+    <h2>{agents.length} agents, <em>zero</em> drift.</h2>
+    <p class="section-intro">A single AGENTS.md works with every agent following the agents.md standard. Claude Code, Cursor and Copilot also get a slim redirect stub, since each auto-loads its own file first. Session prompts use native folders where agents have them and an init-session skill where they don't.</p>
+  </div>
+  <div class="stage">
+    <div class="coverage" style={`--cols:${coverageCols.length}`} role="group" aria-label="Agent support matrix">
+      <div class="cov-row cov-head"><span></span>{coverageCols.map((c) => <span class="cov-cat">{c}</span>)}</div>
+      {agents.map(([name, vendor, flags], i) => (
+        <div class="cov-row" style={`--c:${ac(i)}`}>
+          <span class="cov-agent" title={vendor}>{name}</span>
+          {flags.map((on, j) => <span class={`cov-cell ${on ? 'cov-stable' : 'cov-none'}`} title={`${name} · ${coverageCols[j]}: ${on ? 'yes' : 'no'}`}>{on && <i></i>}</span>)}
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="section-head sub"><div class="kicker small">Languages</div></div>
+  <div class="tldr-grid">
+    {languages.map((l, i) => (
+      <article class="tl reveal" style={`--c:${ac(i + 2)}`}>
+        <span class="tl-tag">{l.files.length ? l.files.length + ' config' : 'no config'}</span>
+        <h3>{l.name}</h3>
+        <p>{l.skills.map((s) => <code>{s}</code>).reduce((a: any[], x) => (a.length ? [...a, ' ', x] : [x]), [])}</p>
+      </article>
+    ))}
+  </div>
+</section>
+
+<section class="section" id="templates">
+  <div class="section-head"><Kicker num="04" text="Templates & skills" />
+    <h2>Your catalog, <em>your</em> rules.</h2>
+    <p class="section-intro">Everything slopctl installs is described in <code>templates.yml</code>. Point <code>--from</code> at your own repo or a local folder and add agents, languages or <a href="https://agentskills.io">Agent Skills</a> without touching the CLI. Skill sources can be local directories or full GitHub URLs, cached with one tarball download per repository. The default catalog lives in <a href={TEMPLATES_REPO}>slopctl-templates</a>.</p>
+  </div>
+  <Term code={templatesCode} />
+</section>
+
+<section class="section" id="faq">
+  <div class="section-head"><Kicker num="05" text="FAQ" />
+    <h2>Quick <em>answers</em>.</h2>
+  </div>
+  <div class="changelog">
+    <ol class="day-list">
+      {faq.map((f) => (
+        <li class="reveal" style="display:block">
+          <details>
+            <summary><b>{f.q}</b></summary>
+            <div class="faq-a" set:html={f.a} />
+          </details>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<section class="outro">
+  <div class="outro-inner">
+    <Kicker num="06" text="Get it" extra="center" />
+    <h2>Stop copying AGENTS.md <em>around</em>.</h2>
+    <p>Install once, init anywhere, and let every agent read the same instructions.</p>
+    <div class="hero-cta"><a class="btn btn-hot" href="#install"><span class="btn-lamp"></span>Install slopctl</a><a class="btn btn-ghost" href={REPO}>Source on GitHub ↗</a></div>
+  </div>
+</section>
+</Layout>

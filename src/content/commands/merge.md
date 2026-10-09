@@ -1,6 +1,8 @@
 ---
 title: merge
-description: AI-assisted merge of customized files with updated templates.
+summary: "AI-assisted merge of customized files with updated templates."
+group: maintain
+order: 6
 ---
 
 Merge customized workspace files with updated templates using AI assistance. `merge` runs

@@ -1,6 +1,8 @@
 ---
 title: remove
-description: Remove agent, language, or all managed files from a workspace.
+summary: "Remove agent, language, or all managed files from a workspace."
+group: maintain
+order: 7
 ---
 
 Remove agent-specific or language-specific files from the current directory. Use `--purge`

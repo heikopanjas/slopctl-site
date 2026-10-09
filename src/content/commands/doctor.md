@@ -1,6 +1,8 @@
 ---
 title: doctor
-description: Check the workspace for stale or broken managed files.
+summary: "Check the workspace for stale or broken managed files."
+group: inspect
+order: 8
 ---
 
 Check the workspace for stale or broken managed files and optionally fix them. With

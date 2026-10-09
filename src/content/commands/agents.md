@@ -1,6 +1,8 @@
 ---
 title: agents
-description: Manage the global agent defaults catalog.
+summary: "Manage the global agent defaults catalog."
+group: setup
+order: 2
 ---
 
 Download, update, verify, or browse the global agent defaults catalog. This catalog defines

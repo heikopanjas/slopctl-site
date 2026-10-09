@@ -1,6 +1,8 @@
 ---
 title: models
-description: Manage the global model defaults catalog.
+summary: "Manage the global model defaults catalog."
+group: setup
+order: 3
 ---
 
 Download, update, verify, or browse the global model defaults catalog

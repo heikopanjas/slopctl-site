@@ -1,6 +1,8 @@
 ---
 title: templates
-description: Manage the global template catalog.
+summary: "Manage the global template catalog."
+group: setup
+order: 1
 ---
 
 Download, update, or browse the global template catalog.

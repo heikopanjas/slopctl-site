@@ -1,6 +1,8 @@
 ---
 title: config
-description: Manage persistent configuration with Git-style dotted keys.
+summary: "Manage persistent configuration with Git-style dotted keys."
+group: inspect
+order: 10
 ---
 
 Manage persistent configuration settings using Git-style dotted keys.
