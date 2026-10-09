@@ -36,6 +36,26 @@ npm run preview
 Pushes to `main` run `.github/workflows/pages.yml`, which builds the site and deploys it
 with GitHub Pages (Settings → Pages → Source: GitHub Actions).
 
+The build reads the latest slopctl release from the GitHub API and shows it in the hero. A
+rebuild is triggered by a `slopctl-release` repository dispatch, by a daily schedule as a
+fallback, or manually. To send the dispatch, add this job to the slopctl release workflow
+(`SITE_DISPATCH_TOKEN` is a fine-grained PAT with Contents: read/write on this repo):
+
+```yaml
+on:
+  release:
+    types: [published]
+jobs:
+  notify-site:
+    runs-on: ubuntu-latest
+    steps:
+      - run: >
+          gh api repos/heikopanjas/slopctl-site/dispatches
+          -f event_type=slopctl-release
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+```
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

@@ -4,8 +4,10 @@ import Layout from '../layouts/Layout.astro';
 import Kicker from '../components/Kicker.astro';
 import Waveform from '../components/Waveform.astro';
 import Term from '../components/Term.astro';
+import { latestRelease } from '../data/release';
 import { REPO, TEMPLATES_REPO, accents, tldr, standards, steps, agents, coverageCols, languages, templatesCode, faq } from '../data/site';
 
+const release = await latestRelease();
 const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 const commands = (await getCollection('commands')).sort((a, b) => a.data.order - b.data.order);
 const groups = [
@@ -25,7 +27,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
   <div class="hero-grid" aria-hidden="true"></div>
   <Waveform />
   <div class="hero-inner">
-    <p class="eyebrow">Rust CLI · agents.md standard · MIT</p>
+    <p class="eyebrow">Rust CLI · agents.md standard · MIT{release && <> · <a href={release.url}>{release.tag}</a> · {release.date}</>}</p>
     <h1>One AGENTS.md, <em>every</em> agent.</h1>
     <p class="lede">One AGENTS.md, ten coding agents, zero drift. slopctl installs, updates, and synchronizes agent instructions and skills across every workspace you touch.</p>
     <div class="hero-cta">
