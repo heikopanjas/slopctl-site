@@ -50,11 +50,8 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
     <h2>Write it <em>once</em>.</h2>
     <p class="section-intro">Every agent invents its own instruction files. slopctl keeps one source of truth and routes it to wherever each agent looks.</p>
   </div>
-  <div class="tldr-grid">
-    {tldr.map((t, i) => <article class="tl reveal" style={`--c:${ac(i)}`}><span class="tl-tag">{t.tag}</span><h3>{t.title}</h3><p>{t.body}</p></article>)}
-  </div>
-  <div class="std-grid" style="margin-top:16px">
-    {standards.map((t, i) => <article class="tl std reveal" style={`--c:${ac(i + 4)}`}><span class="tl-tag">{t.tag}</span><h3>{t.title}</h3><p>{t.body}</p></article>)}
+  <div class="std-grid">
+    {[...tldr, ...standards].map((t, i) => <article class="tl std reveal" style={`--c:${ac(i)}`}><span class="tl-tag">{t.tag}</span><h3>{t.title}</h3><p>{t.body}</p></article>)}
   </div>
 </section>
 

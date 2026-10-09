@@ -127,7 +127,7 @@ main{position:relative}
 .tl p{color:var(--soft);font-size:15.5px;margin:0}
 .std h3{margin-top:0}
 .tl-tag{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);padding:5px 8px;border-radius:6px}
-.tl:nth-child(2){transition-delay:.08s}.tl:nth-child(3){transition-delay:.16s}.tl:nth-child(4){transition-delay:.24s}
+.tl:nth-child(even){transition-delay:.08s}
 @media (max-width:1000px){.tldr-grid{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.tldr-grid,.std-grid{grid-template-columns:1fr}}
 
