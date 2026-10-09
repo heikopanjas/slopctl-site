@@ -1,0 +1,1688 @@
+---
+title: Documentation
+summary: "How slopctl works, every command in detail, template format, skills and custom agents."
+---
+
+## Overview
+
+slopctl is a command-line tool that helps you:
+
+- **Manage templates globally** – Store templates in a single cache directory (`$XDG_CACHE_HOME/slopctl/templates`, or `$HOME/.cache/slopctl/templates` — same on all platforms)
+- **Configure via YAML** – Define template structure in `templates.yml` and agent filesystem defaults in `agent-defaults.yml`
+- **Initialize projects quickly** – Set up agent instructions with a single command
+- **agents.md standard** – Follow the [agents.md](https://agents.md) community standard (single AGENTS.md for all agents)
+- **Agent Skills support** – Define and install [Agent Skills](https://agentskills.io) (SKILL.md) from templates; local directories and full GitHub URLs are supported in `templates.yml`
+- **Custom agents without forking** – Add your own agent with a small `agent.yml` overlay in the workspace or your global config ([example](#example-add-an-agent-called-acme))
+- **Keep catalogs synchronized** – Update global templates and agent defaults from remote sources
+- **AI-assisted merge** – Merge customized files with updated templates using LLM providers (OpenAI, Anthropic, Ollama, Mistral)
+- **Append-only decision log** – `UPDATES.md` keeps the "Recent Updates & Decisions" history below a changelog marker that init, update, and merge never overwrite
+- **Workspace health checks** – Detect and fix stale or broken managed files with `doctor --fix`; run `doctor --smart` for AI-assisted linting of `AGENTS.md`
+- **Enforce governance** – Built-in guardrails for no auto-commits and human confirmation
+- **Support multiple agents** – Compatible with every agent in the default catalog (see [Supported Agents](#supported-agents)), plus your own via [agent overlays](#adding-a-custom-agent)
+- **Flexible file placement** – Use placeholders (`$workspace`, `$userprofile`) for custom locations
+- **Template versioning** – V5 templates with shared file groups (with skill propagation), composable languages, agent/language skill associations, and agent directories
+
+## Philosophy
+
+1. **Human control first** – All prompts enforce explicit confirmation before commits
+2. **Single source of truth** – Centralized `AGENTS.md` file for project instructions
+3. **Transparency** – Every change logs rationale with date and reasoning
+4. **Minimalism** – Only essential policies that deliver concrete safety or velocity
+5. **Scalability** – Add new agents without policy drift
+
+## Template Format (V5)
+
+slopctl uses the V5 template format following the [agents.md](https://agents.md) standard.
+
+**Philosophy**: One AGENTS.md file that works across all agents.
+
+- Follows the [agents.md](https://agents.md) community standard
+- Single AGENTS.md file compatible with every agent in the default catalog (see [Supported Agents](#supported-agents))
+- AGENTS.md is the single source of truth; most agents read it natively with no additional stub. Claude Code, GitHub Copilot, and Cursor each auto-load an instruction file of their own before AGENTS.md, so all three get a slim redirect stub (`CLAUDE.md`, `.github/copilot-instructions.md`, `.cursorrules`) from one shared template source
+- [Agent Skills](https://agentskills.io) support: define skills per agent, per language, or as top-level entries
+- Shared file groups (`shared` section) and composable languages (`includes`) for reuse across languages
+- Skills associated with agents, languages, or shared groups — skills propagate via `includes` (from shared groups and from included languages)
+- Simpler initialization: `slopctl init --lang rust` or omit `--lang` for language-independent setup
+- Optional `--lang` and `--agent` (specify at least one; `--agent` alone preserves existing language when switching)
+- Agent initialization creates the agent's workspace marker directory (for example `.cursor`, `.claude`, or `.opencode`) so later commands can detect the installed agent
+- GitHub URL support: `source` fields in templates.yml accept full GitHub URLs for remote files
+- Skills are declared in `templates.yml` and installed automatically with the selected language, agent, or top-level template set
+- Cross-client skill directory: template-defined non-agent skills install to `.agents/skills/` for agents that support the agentskills.io convention
+- URL: `https://github.com/heikopanjas/slopctl-templates/tree/develop/templates`
+
+**Usage:**
+
+```bash
+slopctl templates --update            # Downloads V5 templates
+slopctl agents --update               # Downloads agent filesystem defaults
+slopctl init --lang rust           # With language conventions
+slopctl init --agent cursor        # Agent only (AGENTS.md + agent prompts, no language files)
+```
+
+## Installation
+
+### Prebuilt binaries
+
+slopctl is available for macOS, Linux and Windows. Download the archive for your platform from the [latest GitHub release](https://github.com/heikopanjas/slopctl/releases/latest): `slopctl-macos.zip`, `slopctl-linux.zip` or `slopctl-windows.zip`.
+
+```bash
+# macOS (use slopctl-linux.zip on Linux)
+curl -LO https://github.com/heikopanjas/slopctl/releases/latest/download/slopctl-macos.zip
+unzip slopctl-macos.zip
+chmod +x slopctl
+sudo mv slopctl /usr/local/bin/
+```
+
+```powershell
+# Windows (PowerShell), then add the folder to your PATH
+Invoke-WebRequest https://github.com/heikopanjas/slopctl/releases/latest/download/slopctl-windows.zip -OutFile slopctl-windows.zip
+Expand-Archive slopctl-windows.zip -DestinationPath $env:LOCALAPPDATA\slopctl
+```
+
+### From source
+
+```bash
+git clone https://github.com/heikopanjas/slopctl.git
+cd slopctl
+cargo build --release
+sudo cp target/release/slopctl /usr/local/bin/
+# or: cargo install --path .
+```
+
+## Quick Start
+
+```bash
+# 1. Download global templates
+slopctl templates --update
+
+# 2. Initialize your project (choose one style)
+cd your-project
+slopctl init --lang rust         # With Rust conventions and config files
+slopctl init --agent cursor     # Agent prompts + skills (AGENTS.md without language files)
+```
+
+With `--lang rust` this will:
+
+1. Copy main AGENTS.md template to your project
+2. Merge skill hint fragments into AGENTS.md (tells agents about available coding skills)
+3. Copy language config files (.rustfmt.toml, .editorconfig)
+4. Create `UPDATES.md`, the append-only "Recent Updates & Decisions" log (entries below its changelog marker are preserved on re-init and merge)
+5. Install language skills (rust-coding-conventions, rust-build-commands) and the top-level skills (git-workflow, semantic-versioning, recent-updates) to `.agents/skills/`
+6. **Single AGENTS.md works with all agents** (every agent in the default catalog)
+
+Without `--lang`, you still get AGENTS.md (mission, principles, integration), `UPDATES.md`, and the top-level skills—just no language-specific files.
+
+### Initialize from a custom template source
+
+```bash
+# From a local path
+slopctl templates --update --from /path/to/templates
+
+# From a GitHub URL
+slopctl templates --update --from https://github.com/user/repo/tree/branch/templates
+
+# Then initialize the project
+slopctl init --lang c++ --agent claude
+```
+
+**Note:** The custom source must include a `templates.yml` file that defines the template structure.
+
+## Complete Walkthrough: Rust Project
+
+This walkthrough demonstrates setting up a new Rust project using slopctl.
+
+### Step 1: Create Your Project Directory
+
+```bash
+mkdir my-rust-project
+cd my-rust-project
+```
+
+### Step 2: Initialize with slopctl
+
+```bash
+slopctl init --lang rust
+```
+
+**What happens:**
+
+1. **Downloads templates** (first run only):
+   - Fetches `templates.yml` from GitHub (V5 format)
+   - Downloads all template files to the global cache directory (`$HOME/.cache/slopctl/templates`, same on all platforms)
+
+2. **Processes configuration**:
+   - Detects template version 5 (agents.md standard)
+   - Identifies fragments marked with `$instructions` placeholder
+
+3. **Creates main AGENTS.md**:
+   - Downloads main AGENTS.md template
+   - Merges fragments at insertion points:
+     - **Mission section**: mission-statement.md, technology-stack.md
+     - **Principles section**: core-principles.md, best-practices.md
+     - **Languages section**: skill hint fragment (tells agents about available skills)
+     - **Integration section**: git-workflow summary, semantic-versioning summary, recent-updates summary
+   - Saves complete merged file to `./AGENTS.md`
+
+4. **Installs language config files**:
+   - Copies `.rustfmt.toml` for Rust formatting
+   - Copies `.editorconfig` for editor configuration
+
+5. **Creates `UPDATES.md`** — the append-only "Recent Updates & Decisions" log; everything below its changelog marker is user-owned and preserved by later init, update, and merge runs
+
+6. **Installs skills** (as Agent Skills to `.agents/skills/`):
+   - `rust-coding-conventions` — Rust coding standards and conventions
+   - `rust-build-commands` — Cargo build commands and workflows
+   - `git-workflow`, `semantic-versioning`, `recent-updates` — agent-agnostic top-level skills
+
+### Step 3: Verify Installation
+
+```bash
+ls -la
+```
+
+**Expected structure:**
+
+```text
+my-rust-project/
+├── AGENTS.md                          # Single instruction file (works with all agents)
+├── UPDATES.md                         # Append-only Recent Updates & Decisions log
+├── .rustfmt.toml                      # Rust formatting configuration
+├── .editorconfig                      # Editor configuration
+└── .agents/skills/                    # Cross-client Agent Skills directory
+    ├── rust-coding-conventions/       # Rust coding standards skill
+    ├── rust-build-commands/           # Cargo build commands skill
+    ├── git-workflow/                  # Commit message conventions skill
+    ├── semantic-versioning/           # SemVer decision rules skill
+    └── recent-updates/                # UPDATES.md log maintenance skill
+```
+
+### Step 4: Start Coding with Any Agent
+
+**With Claude Code or Cursor:**
+
+Open your agent and reference `AGENTS.md` in project settings. The single AGENTS.md works automatically.
+
+**With GitHub Copilot:**
+
+Copilot automatically reads AGENTS.md from your workspace.
+
+**With Codex:**
+
+Codex reads AGENTS.md from your workspace automatically.
+
+### Step 5: Verify Agent Understands Instructions
+
+Ask your agent to confirm:
+
+```text
+Please confirm you've read AGENTS.md and understand the project instructions.
+```
+
+The agent should acknowledge the:
+
+- Commit protocol (no auto-commits)
+- Available coding skills (Rust conventions, build commands)
+- Git workflow conventions
+- Build environment requirements
+
+### Step 6: Start Coding
+
+Now you can work with your agent following the established guidelines:
+
+```text
+Help me create a library crate with proper error handling using Result types.
+```
+
+Your agent will follow the conventions in AGENTS.md, including:
+
+- Using proper Rust style
+- Following conventional commits
+- Waiting for explicit commit confirmation
+- Documenting decisions
+
+### Step 7: Update Templates Later (Optional)
+
+If templates are updated upstream:
+
+```bash
+# Update global templates
+slopctl templates --update
+
+# Then refresh the workspace from the updated cache
+slopctl update
+```
+
+slopctl will:
+
+- Restore missing files and refresh unmodified ones
+- Skip locally modified files (use `slopctl merge` to combine them, or `--force` to overwrite)
+- Leave AGENTS.md untouched (`slopctl merge` is its update path)
+
+Re-running `slopctl init` with an already-installed language/agent is rejected with guidance; `init` is for installing something new.
+
+### Common Scenarios
+
+**Scenario: Modified AGENTS.md locally**
+
+A customized AGENTS.md is never overwritten by `update`. Use `slopctl merge` for an AI-assisted combination with the latest template, or force a reinstall:
+
+```bash
+git diff AGENTS.md              # Review changes
+git add AGENTS.md
+git commit -m "docs: customize project instructions"
+slopctl merge                   # AI-assisted merge (recommended)
+slopctl init --lang rust --force   # Or: overwrite with fresh templates
+```
+
+**Scenario: Clean up project templates**
+
+```bash
+# Remove all slopctl files including AGENTS.md
+slopctl remove --purge
+
+# Removes AGENTS.md, agent files (e.g. .claude/commands/), and language config files
+# Preserves customized AGENTS.md and the UPDATES.md log unless --force is also used
+```
+
+**Scenario: Remove only agent-specific files**
+
+```bash
+# Remove all agent files but keep AGENTS.md
+slopctl remove --all
+
+# Remove only one agent's files
+slopctl remove --agent claude
+
+# Removes .claude/commands/, .cursor/commands/, agent skills, etc.
+```
+
+**Scenario: Remove language config files (switch languages)**
+
+```bash
+# Remove Rust config files (.rustfmt.toml, .editorconfig, etc.)
+slopctl remove --lang rust
+
+# Then install C++ config files
+slopctl init --lang c++
+```
+
+**Scenario: Diagnose and fix workspace issues**
+
+```bash
+# Check for broken/stale managed files
+slopctl doctor --verbose
+
+# Fix what can be fixed automatically (prune stale entries, strip unmerged markers)
+slopctl doctor --fix
+
+# Re-merge language sections after fixing an unmerged AGENTS.md
+slopctl merge
+```
+
+**Scenario: Switch from Cursor to Claude (keep Rust setup)**
+
+```bash
+# You have Rust + Cursor; want to add Claude prompts
+slopctl init --agent claude
+# Uses existing Rust language; adds Claude prompts only
+```
+
+**Scenario: Language-independent project (e.g. docs-only repo)**
+
+```bash
+slopctl init --agent cursor
+# AGENTS.md with mission, principles, integration + agent prompts—no .rustfmt.toml, no coding-conventions
+```
+
+**Scenario: Use custom templates**
+
+```bash
+# Your team maintains custom templates
+slopctl templates --update --from https://github.com/yourteam/templates/tree/main/templates
+
+# Then initialize
+slopctl init --lang rust
+```
+
+### Tips for Success
+
+1. **Initialize early**: Run `slopctl init` at project start before adding code
+2. **Commit instructions**: Add AGENTS.md and agent files to version control
+3. **Team consistency**: All team members should use same template source
+4. **Customize carefully**: Modify AGENTS.md as needed, but track changes in git
+5. **Update periodically**: Check for template updates monthly or quarterly
+6. **Use force sparingly**: Only use `--force` when you understand what you're overwriting
+7. **Use version control**: Git is your primary safety net for tracking changes
+8. **Preview first**: Use `--dry-run` to preview changes before applying them
+
+## CLI Commands
+
+### `templates` - Manage Global Template Catalog
+
+Download, update, or browse the global template catalog.
+
+**Usage:**
+
+```bash
+slopctl templates --update [--from <PATH or URL>] [--dry-run]
+slopctl templates --verify [--from <PATH or URL>]
+slopctl templates --list
+slopctl templates --update --verify --list
+```
+
+**Options:**
+
+- `--update` / `-u` - Download or update global templates from source
+- `--verify` / `-V` - Validate the local template catalog (YAML structure, local file integrity, source freshness). Returns non-zero exit code if any issue is found (useful for CI).
+- `--list` / `-l` - Show available agents, languages, and skills
+- `--from` / `-f` - Path or URL used by `--update` (download source) and `--verify` (freshness check)
+- `--dry-run` / `-n` - Preview what would be downloaded (requires `--update`)
+
+At least one of `--update`, `--verify`, or `--list` is required. All three can be combined; execution order is `--update` → `--verify` → `--list`.
+
+**Examples:**
+
+```bash
+# Update global templates from default repository
+slopctl templates --update
+
+# Update from custom URL
+slopctl templates --update --from https://github.com/user/repo/tree/branch/templates
+
+# Update from local path
+slopctl templates --update --from /path/to/templates
+
+# Preview what would be downloaded
+slopctl templates --update --dry-run
+
+# Validate local catalog (YAML structure, file integrity, source freshness)
+slopctl templates --verify
+
+# Validate against a specific source (for freshness check)
+slopctl templates --verify --from https://github.com/user/repo/tree/branch/templates
+
+# Browse available agents, languages, and skills
+slopctl templates --list
+
+# Update, validate, and then show what is available
+slopctl templates --update --verify --list
+```
+
+**Behavior:**
+
+- Downloads templates from specified source or default GitHub repository
+- If `--from` is not specified, downloads from:
+  - **Default**: `https://github.com/heikopanjas/slopctl-templates/tree/develop/templates` (agents.md standard)
+- Downloads `templates.yml` configuration file and all template files
+- Stores templates in the global cache directory: `$HOME/.cache/slopctl/templates`
+  (`$XDG_CACHE_HOME/slopctl/templates` if `XDG_CACHE_HOME` is set) — same on all platforms
+- If `--dry-run` is specified, shows the source URL and target directory without downloading
+- Overwrites existing global templates with new versions
+- `--verify` also cross-checks `templates.yml` against `agent-defaults.yml` (an agent must be in both) and checks [overlay agents](#adding-a-custom-agent)
+- Does NOT modify any files in the current project directory
+- **`--verify` checks three things in sequence:**
+  - **YAML structure** – parses `templates.yml`, checks version, checks for duplicate targets
+  - **Local file integrity** – every non-URL `source` file referenced in `templates.yml` must exist in the local cache
+  - **Source freshness** – fetches `templates.yml` from the configured source and compares it with the local copy; a mismatch recommends `slopctl templates --update`
+
+**Note:** Run `templates --update` first to download templates before using `init` to set up a project.
+
+**GitHub rate limits:** slopctl does not use GitHub authentication tokens. Unauthenticated access is subject to GitHub limits (~60 REST API requests/hour per IP, plus throttling on `raw.githubusercontent.com`). During `templates --update`, URL-based skill repositories are fetched with **one tarball download per repository** instead of recursive Contents API listing. HTTP 429/503 responses are retried with backoff. If limits are still exceeded, wait and retry `slopctl templates --update`. Use `update` to refresh workspace files from the local cache without additional network calls.
+
+### `agents` - Manage Global Agent Defaults Catalog
+
+Download, update, verify, or browse the global agent defaults catalog. This catalog defines agent filesystem conventions such as prompt directories, skill directories, workspace detection markers, and whether an agent reads `.agents/skills/`.
+
+**Usage:**
+
+```bash
+slopctl agents --update [--from <PATH or URL>] [--dry-run]
+slopctl agents --verify [--from <PATH or URL>]
+slopctl agents --list
+slopctl agents --update --verify --list
+```
+
+**Options:**
+
+- `--update` / `-u` - Download or update global agent defaults from source
+- `--verify` / `-V` - Validate local `agent-defaults.yml` and compare it with the configured source
+- `--list` / `-l` - Show known agents and their default prompt, skill, and marker paths; [overlay agents](#adding-a-custom-agent) are included and show their origin
+- `--from` / `-f` - Path or URL used by `--update` and `--verify`
+- `--dry-run` / `-n` - Preview what would be downloaded (requires `--update`)
+
+At least one of `--update`, `--verify`, or `--list` is required. All three can be combined; execution order is `--update` → `--verify` → `--list`.
+
+`templates --update` bootstraps `agent-defaults.yml` only when it is missing. After that, use `agents --update` to update agent defaults independently from templates.
+
+### `init` - Initialize Agent Instructions and Skills
+
+Initialize instruction files and skills for AI coding agents in your project.
+
+**Usage:**
+
+```bash
+# Specify at least one of --lang or --agent
+
+# With language conventions
+slopctl init --lang <language> [--agent <agent>] [--mission <text|@file>] [--force] [--dry-run]
+
+# Agent only (preserves existing language, or language-independent if fresh)
+slopctl init --agent <agent> [--mission <text|@file>] [--force] [--dry-run]
+```
+
+**Options:**
+
+- `--lang <string>` - Programming language or framework (e.g., c++, rust, shell, swift, c). Optional; omit for language-independent setup.
+- `--agent <string>` - AI coding agent (e.g., claude, copilot, codex, cursor). Optional; when specified alone, preserves existing language when switching agents.
+- `--mission <string>` - Custom mission statement to override the template default. Use `@filename` to read from a file (e.g., `--mission @mission.md`)
+- `--force` - Force overwrite of local files without confirmation; also bypasses the already-initialized guard for reinstalls
+- `--dry-run` - Preview changes without applying them
+
+**Examples:**
+
+```bash
+# Initialize Rust project (works with all agents)
+slopctl init --lang rust
+
+# Initialize C++ project
+slopctl init --lang c++
+
+# Agent only (AGENTS.md + agent prompts, no language files)
+slopctl init --agent cursor
+
+# Switch from Cursor to Claude (keeps existing language e.g. Rust)
+slopctl init --agent claude
+
+# Initialize with custom mission statement (inline)
+slopctl init --lang rust --mission "A CLI tool for managing AI agent instructions"
+
+# Initialize with mission statement from file (multi-line support)
+slopctl init --lang rust --mission @mission.md
+
+# Force overwrite existing local files
+slopctl init --lang swift --force
+
+# Preview what would be created/modified
+slopctl init --lang rust --dry-run
+```
+
+**Behavior:**
+
+- Uses global templates to set up agent instructions in the current project
+- If global templates do not exist, automatically downloads them from the default repository
+- Detects template version from templates.yml
+- **Must specify at least one** of `--lang` or `--agent`
+- **GitHub URL sources**: Any `source` field in templates.yml can be a full GitHub URL (cached by `templates --update` or fetched via tarball during `init`)
+- **With `--agent` only** (no `--lang`): Creates AGENTS.md with mission, principles, integration (no language files); preserves existing language if previously installed; installs agent-associated skills from templates.yml; creates agent-declared directories (e.g. `.cursor/plans`)
+- **With `--lang`**: Creates single AGENTS.md plus language config files; installs language-associated skills (own + inherited from shared groups) from templates.yml to cross-client directory; optional `--agent` adds agent prompts and agent skills
+- **Already-initialized guard**: when every requested `--lang`/`--agent` is already installed (per the file tracker), init errors with guidance pointing to `slopctl update`, `slopctl merge`, or `--force`; adding anything new proceeds normally
+- Checks for local modifications to AGENTS.md (detects if template marker has been removed)
+- If local AGENTS.md has been customized and `--force` is not specified, skips AGENTS.md
+- Tracked files with local modifications that add no new owners are skipped (local version kept); `merge` is their update path, `--force` overwrites
+- If `--force` is specified, overwrites local files regardless of modifications
+- If `--dry-run` is specified, shows what would be created/modified without making changes
+- Files are placed according to `templates.yml` configuration with placeholder resolution:
+  - `$workspace` resolves to current directory
+  - `$userprofile` resolves to user's home directory
+- Merges language-specific and integration fragments into AGENTS.md
+
+### `remove` - Remove Agent, Language, or All Files
+
+Remove agent-specific or language-specific files from the current directory. Use `--purge` to also remove AGENTS.md (full cleanup).
+
+**Usage:**
+
+```bash
+# Remove specific agent's files
+slopctl remove --agent <agent> [--force] [--dry-run]
+
+# Remove language disk files (e.g. .rustfmt.toml, .editorconfig)
+slopctl remove --lang <lang> [--force] [--dry-run]
+
+# Remove all agent-specific files and skills (keeps AGENTS.md)
+slopctl remove --all [--force] [--dry-run]
+
+# Remove everything including AGENTS.md (full purge)
+slopctl remove --purge [--force] [--dry-run]
+```
+
+**Options:**
+
+- `--agent <string>` - AI coding agent (e.g., claude, copilot, codex, cursor)
+- `--lang <string>` - Language to remove disk files and language-associated skills for (e.g., rust, c++, shell, swift). Skips `$instructions` fragments (merged into AGENTS.md) and `$userprofile` paths unless tracked in the workspace.
+- `--all` - Remove all agent-specific files and skills (keeps AGENTS.md). Mutually exclusive with `--agent`, `--lang`, and `--purge`.
+- `--purge` - Remove all slopctl files including AGENTS.md (full cleanup). Mutually exclusive with `--agent`, `--lang`, and `--all`.
+- `--force` - Force removal without confirmation; combined with `--purge`, also overrides the customized-AGENTS.md preservation guard.
+- `--dry-run` - Preview what would be deleted without making changes
+
+**Examples:**
+
+```bash
+# Remove Claude-specific files with confirmation
+slopctl remove --agent claude
+
+# Remove Rust language files (.rustfmt.toml, .editorconfig, etc.)
+slopctl remove --lang rust
+
+# Remove language files and agent files together
+slopctl remove --lang rust --agent cursor
+
+# Remove all agent-specific files (keeps AGENTS.md)
+slopctl remove --all
+
+# Remove all agents with force
+slopctl remove --all --force
+
+# Remove everything including AGENTS.md (full purge)
+slopctl remove --purge
+
+# Force-purge even if AGENTS.md was customized
+slopctl remove --purge --force
+
+# Preview what would be deleted
+slopctl remove --lang rust --dry-run
+slopctl remove --purge --dry-run
+```
+
+**Behavior:**
+
+- Loads templates.yml from global storage to build Bill of Materials (BoM)
+- `--agent`: removes agent instruction, prompt, and skill files; candidates come from the BoM, tracked files solely owned by the agent, and files inside the agent's catalog directories (markers, skill dir, prompt dir)
+- Removing an agent or language releases its ownership across ALL tracker entries, so shared files keep correct owners and `status`/re-init stay truthful
+- `--lang`: resolves the language's complete file list via `resolve_language_files` (honours `includes` chains); removes language-associated skill directories; skips `$instructions` fragments; validates the language name against templates.yml
+- `--all`: removes all agent files and skills from all agents; **NEVER touches AGENTS.md**
+- `--purge`: removes everything `--all` removes **plus** AGENTS.md; customized AGENTS.md is preserved unless `--force` is also given
+- Changelog-marker files (e.g. `UPDATES.md`) are preserved by `remove` and `--purge` regardless of tracked modification status; `--purge --force` overrides
+- Only removes files that exist in the current directory
+- Shows list of files to be removed before deletion
+- Asks for confirmation unless `--force` is specified
+- If `--dry-run` is specified, shows files that would be deleted without removing them
+- Automatically cleans up empty parent directories
+- Does NOT affect global templates in local data directory
+- If agent/language not found in BoM/templates, shows a list of available options
+- Must specify at least one of `--agent`, `--lang`, `--all`, or `--purge`
+
+### `doctor` - Check Workspace Health
+
+Check the workspace for stale or broken managed files and optionally fix them. With `--smart`, additionally run LLM-assisted linting of `AGENTS.md` for contradictions, stale references, and unclear instructions.
+
+**Usage:**
+
+```bash
+slopctl doctor [--fix] [--dry-run] [--verbose] [--smart]
+```
+
+**Options:**
+
+- `--fix` - Automatically repair detected issues where safe to do so
+- `--dry-run` - Preview what would be fixed without applying changes
+- `--verbose` - Print every checked file and its result during the scan
+- `--smart` - Run AI-assisted linting of `AGENTS.md` after the standard checks. Reports contradictions, stale references, and unclear instructions. Provider is resolved from config `merge.provider` or env API keys.
+
+**Issue categories detected:**
+
+| Kind | Condition | Symbol |
+| --- | --- | --- |
+| **Missing** | File is tracked but no longer exists on disk (stale tracker entry) | `✗` |
+| **Unmerged** | AGENTS.md (main file) exists but still contains the template marker | `✗` |
+| **Modified** | File exists but SHA changed since installation (informational; main files like AGENTS.md and changelog-marker files like UPDATES.md are excluded since customization is expected) | `!` |
+
+**What `--fix` repairs:**
+
+- **Missing** — Prunes the stale FileTracker entry. No filesystem change; run `slopctl update` to restore the file.
+- **Unmerged** — Strips the template marker from the file in-place, marking it as customized so future installs won't silently overwrite it. Run `slopctl merge` afterward for a full re-merge with language sections.
+- **Modified** — No automatic fix; shown as informational. Use `slopctl merge` to combine, or `slopctl update --force` to overwrite if intended.
+
+**Examples:**
+
+```bash
+# Check workspace for issues
+slopctl doctor
+
+# Show every file checked alongside its result
+slopctl doctor --verbose
+
+# Automatically fix what can be fixed
+slopctl doctor --fix
+
+# Preview fixes without applying them
+slopctl doctor --fix --dry-run
+
+# Run AI-assisted linting of AGENTS.md after the standard checks
+slopctl doctor --smart
+```
+
+**Example output (with --verbose and issues present):**
+
+```text
+Checking workspace files:
+
+  ✓ OK:       .cursor/commands/init-session.md
+  ✓ OK:       .agents/skills/git-workflow/SKILL.md
+  ✗ Missing:  .editorconfig
+  ✗ Unmerged: AGENTS.md
+  ! Modified: .rustfmt.toml
+
+Issues found:
+
+  ✗ Missing:  .editorconfig (tracked but deleted)
+  ✗ Unmerged: AGENTS.md (template marker still present)
+  ! Modified: .rustfmt.toml (changed since install)
+
+  ✗ 1 stale tracker entry
+  ✗ 1 file with unmerged template marker
+  ! 1 modified file (no automatic fix available)
+
+→ Run 'slopctl doctor --fix' to automatically fix issues
+```
+
+### `status` - Show Workspace Status
+
+Display the current status of slopctl in the project.
+
+**Usage:**
+
+```bash
+slopctl status              # Workspace status
+slopctl status -v           # Workspace status with managed files
+```
+
+To browse the available template catalog, use `slopctl templates --list`.
+
+**Default output includes:**
+
+- **Global Templates:** Whether templates are installed and their location
+  - Template version
+  - Available agents (from templates.yml)
+  - Available languages (from templates.yml)
+- **Project Status:**
+  - AGENTS.md existence and customization status
+  - Which agents are currently installed (detected via workspace marker directories)
+  - Installed languages (from FileTracker metadata)
+  - Installed skills (grouped by name from FileTracker metadata)
+- **Managed Files:** List of all slopctl managed files in current directory (with `--verbose`)
+
+**Example output:**
+
+```text
+slopctl status
+
+Global Templates:
+  ✓ Installed at: /Users/.../slopctl/templates
+  → Template version: 5
+  → Available agents: claude, cline, codex, copilot, cursor, goose, kiro, opencode, pi, vibe
+  → Available languages: c, c++, rust, shell, swift, swiftui
+
+Project Status:
+  ✓ AGENTS.md: exists (customized)
+  ✓ Installed agents: claude, cursor
+  ✓ Installed languages: rust
+  ✓ Installed skills: 5
+    • git-workflow
+    • recent-updates
+    • rust-build-commands
+    • rust-coding-conventions
+    • semantic-versioning
+```
+
+### `completions` - Generate Shell Completions
+
+Generate shell completion scripts for various shells.
+
+**Usage:**
+
+```bash
+slopctl completions <shell>
+```
+
+**Arguments:**
+
+- `<shell>` - Shell to generate completions for: `bash`, `zsh`, `fish`, `powershell`
+
+**Examples:**
+
+```bash
+# Generate zsh completions
+slopctl completions zsh > ~/.zsh/completions/_slopctl
+
+# Generate bash completions
+slopctl completions bash > ~/.bash_completion.d/slopctl
+
+# Generate fish completions
+slopctl completions fish > ~/.config/fish/completions/slopctl.fish
+
+# Generate PowerShell completions
+slopctl completions powershell > slopctl.ps1
+```
+
+### `merge` - AI-Assisted Merge
+
+Merge customized workspace files with updated templates using AI assistance. `merge` runs the same workflow as `init` but resolves conflicts via an LLM instead of prompting the user. By default, merged content replaces the original file directly. Use `--preview` to write `.merged` sidecar files for manual review instead.
+
+The provider is resolved from the `merge.provider` config key, or auto-detected from environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY` — checked in that order). The model is resolved from the `merge.model` config key, or the provider's default. There are no `--provider`/`--model` CLI flags; configure them via `slopctl config --set merge.provider <name>` or env vars.
+
+**Usage:**
+
+```bash
+slopctl merge                                    # Merge using config/env provider
+slopctl merge --lang rust                        # Override detected language
+slopctl merge --agent cursor                     # Override detected agent
+slopctl merge --mission "My new mission"         # Use a custom mission for the fresh template
+slopctl merge --preview                          # Write .merged sidecars instead of replacing
+slopctl merge --dry-run                          # Show candidates without calling the LLM
+slopctl merge --verbose                          # Show token usage summary after merging
+slopctl merge --list-models                      # List available models from the resolved provider
+```
+
+**Options:**
+
+- `--lang` / `-l` - Programming language override. Falls back to installed language detected by the FileTracker.
+- `--agent` / `-a` - AI coding agent override. Falls back to agents detected in the workspace.
+- `--mission` / `-m` - Custom mission statement for the fresh template (use `@filename` to read from a file).
+- `--preview` - Write `.merged` sidecar files instead of replacing originals
+- `--dry-run` / `-n` - Show merge candidates without calling the LLM
+- `--list-models` / `-L` - List available models from the resolved provider
+- `--verbose` / `-v` - Show token usage summary after merging (input/output tokens, stop reason). Warns if any file was truncated due to max token limits.
+
+**Provider priority:** config `merge.provider` > environment auto-detect > error. Set with `slopctl config --set merge.provider <name>` or via API key env vars.
+
+**Changelog preservation:** For files carrying the `<!-- {changelog} -->` marker (AGENTS.md-style templates, `UPDATES.md`), only the content above the marker is compared and merged; the user-owned log below the marker is never sent to the LLM and is re-attached verbatim.
+
+**Merge candidates:** Files that are both user-modified (SHA changed since install) AND have an updated template source. Includes tracked files, skill files, and untracked files that exist on disk with a matching template source. Without `--agent`, all agents detected in the workspace are included, so every agent's instruction and prompt files participate.
+
+### `update` - Refresh Installed Templates
+
+Refresh installed templates from the **local global template cache**. Without selectors, `slopctl update` refreshes the whole workspace: every installed language and detected agent is resolved, missing or deleted tracked files are restored, unmodified files are brought up to the cached template state, and locally modified or untracked files are skipped with a report (use `--force` to overwrite them). With `--file`/`--skill` selectors it refreshes only the selected targets.
+
+Run `slopctl templates --update` first to refresh the global catalog (including URL-based skills cached under `skills/<name>/`). The `update` command never fetches from GitHub or other remote sources; it copies only the selected targets from that cache into the workspace.
+
+Files and skills are routed to the same workspace locations as `init`. The scope defaults to the installed languages (from the FileTracker) and the agents detected in the workspace; override with `--lang`/`--agent`. Explicitly selected targets are overwritten directly, but a customized or untracked selected target is an error unless `--force` is given; in full-workspace mode such files are skipped with a report instead.
+
+In full-workspace mode, a missing agent instruction or prompt file is only recreated for an agent that owns at least one tracker entry — never for an agent known solely from its marker directory. Files it refuses to create for that reason are reported per agent with a `slopctl init --agent <name>` hint, and `--force` does not override this. An explicit `--agent <name>` that owns nothing in the tracker errors immediately with the same hint, rather than silently doing nothing.
+
+When a skill is refreshed, slopctl-managed files that were removed upstream are also deleted from the workspace and pruned from the tracker. User-added files inside the skill directory that slopctl does not track are preserved.
+
+This differs from `templates --update` (which downloads/updates the *global* catalog) and from `init` (which installs something *new*: a language or an agent). `AGENTS.md` and changelog-marker files (e.g. `UPDATES.md`) are never refreshed by `update`, under any flag; use `merge`.
+
+**Usage:**
+
+```bash
+slopctl templates --update                            # Refresh global cache first
+slopctl update                                      # Refresh the whole workspace
+slopctl update --dry-run                            # Preview the full refresh
+slopctl update --force                              # Also overwrite customized files
+slopctl update --skill rust-coding-conventions      # Refresh a single skill
+slopctl update --file .rustfmt.toml                 # Refresh a single file
+slopctl update --skill git-workflow --file .editorconfig   # Refresh several at once
+slopctl update --file .editorconfig --lang rust     # Override the language scope
+slopctl update --skill init-session --agent cursor  # Override the agent scope
+slopctl update --file .rustfmt.toml --force         # Overwrite a customized file
+slopctl update --skill git-workflow --dry-run       # Preview without writing
+```
+
+**Options:**
+
+- `--file <path>` - Workspace file path to refresh (repeatable)
+- `--skill` / `-s <name>` - Skill name to refresh (repeatable)
+- `--lang` / `-l` - Language scope override (defaults to the installed languages)
+- `--agent` / `-a` - AI coding agent scope override (defaults to detected agents)
+- `--force` / `-f` - Overwrite locally customized or untracked files
+- `--dry-run` / `-n` - Preview changes without applying them
+
+A `--file` path that lives inside a skill directory is rejected with a hint to use `--skill <name>` instead (skills refresh as whole units so upstream-removed files get pruned). Without `--file`/`--skill` the whole workspace is refreshed. `AGENTS.md` is excluded in both modes (it is fragment-merged); use `merge` to update it. Changelog-marker files (e.g. `UPDATES.md`) are excluded the same way, under `--force` too, and `--file UPDATES.md` is a hard error; `merge` is the only command that refreshes the template half above the marker. Agent instruction and prompt files are created only for agents that slopctl installed; an agent detected merely through its marker directory receives skills but no agent files.
+
+### `models` - Manage Global Model Defaults Catalog
+
+Download, update, verify, or browse the global model defaults catalog (`model-defaults.yml`). It defines LLM provider configurations used by `merge` and `doctor --smart`: API endpoints, API key environment variables, and default model identifiers.
+
+**Usage:**
+
+```bash
+slopctl models --update [--from <PATH or URL>] [--dry-run]
+slopctl models --verify [--from <PATH or URL>]
+slopctl models --list
+```
+
+**Options:**
+
+- `--update` / `-u` - Download or update global model defaults from source
+- `--verify` / `-V` - Validate local `model-defaults.yml` and compare it with the configured source
+- `--list` / `-l` - Show known providers, their default models, and endpoints (from the catalog, no live API calls)
+- `--from` / `-f` - Path or URL used by `--update` and `--verify`
+- `--dry-run` / `-n` - Preview what would be downloaded (requires `--update`)
+
+`templates --update` bootstraps `model-defaults.yml` only when it is missing. Use `merge --list-models` to query the live model list from the resolved provider.
+
+### `config` - Manage Configuration
+
+Manage persistent configuration settings using Git-style dotted keys.
+
+Configuration supports two scopes: **workspace** (per-project, stored in `.slopctl/config.yml`) and **global** (user-wide, stored in `~/.config/slopctl/config.yml`). Without the `--global` flag, writes target the workspace config. Reads return the *effective* merged value: workspace wins, global is the fallback.
+
+**Usage:**
+
+```bash
+slopctl config --set <key> <value>    # Set a workspace configuration value
+slopctl config --global --set <k> <v> # Set a global configuration value
+slopctl config <key>                  # Get effective value (workspace > global)
+slopctl config --list                 # List effective configuration with origin labels
+slopctl config --global --list        # List global configuration only
+slopctl config --delete <key>         # Delete from workspace configuration
+slopctl config --global --delete <k>  # Delete from global configuration
+```
+
+**Options:**
+
+- `<key>` - Configuration key to get (e.g., templates.uri)
+- `--set <key> <value>` (`-s`) - Set a configuration value
+- `--list` (`-l`) - List all configuration values
+- `--delete <key>` (`-d`) - Delete a configuration key
+- `--global` (`-g`) - Operate on the global config instead of the workspace config
+
+Configuration keys follow the convention `<command>.<parameter>`, e.g. `templates.uri` configures the `templates` command and `merge.provider` configures the `merge` command.
+
+`templates.uri`, `templates.fallbackUri`, `agents.uri`, and `agents.fallbackUri` accept either a remote URL or a local filesystem path, so the same key works for `https://github.com/...` sources and local catalog directories.
+
+**Examples:**
+
+```bash
+# Set a workspace-local template source (only affects this project)
+slopctl config --set templates.uri /Users/me/work/my-templates
+
+# Set a global template source (shared across all projects)
+slopctl config --global --set templates.uri https://github.com/myteam/templates/tree/main/templates
+
+# Get effective value (workspace overrides global)
+slopctl config templates.uri
+
+# List effective configuration with [workspace] / [global] origin labels
+slopctl config --list
+
+# List global configuration only
+slopctl config --global --list
+
+# Delete workspace override (falls back to global value)
+slopctl config --delete templates.uri
+
+# Delete from global config
+slopctl config --global --delete templates.uri
+
+# Set fallback source for resilience (global)
+slopctl config --global --set templates.fallbackUri https://github.com/heikopanjas/slopctl-templates/tree/develop/templates
+
+# Set an independent agent defaults source
+slopctl config --global --set agents.uri https://github.com/myteam/templates/tree/main/defaults
+
+# Set default LLM provider for merge (workspace-specific)
+slopctl config --set merge.provider anthropic
+
+# Set default model for merge (global default)
+slopctl config --global --set merge.model claude-sonnet-4-6
+```
+
+**Valid Configuration Keys:**
+
+- `templates.uri` - Default template source (URL or local filesystem path) used by `templates --update` and `init` when `--from` is not specified
+- `templates.fallbackUri` - Fallback source (URL or local filesystem path) used when the primary source fails or is unreachable
+- `agents.uri` - Default agent defaults source used by `agents --update`; also used by `templates --update` when bootstrapping missing agent defaults
+- `agents.fallbackUri` - Fallback source for agent defaults when the primary source fails or is unreachable
+- `merge.provider` - Default LLM provider for the `merge` command (openai, anthropic, ollama, mistral)
+- `merge.model` - Default model for the `merge` command (e.g., `gpt-5.6-terra`, `claude-sonnet-5`)
+- `models.uri` - Default model defaults source used by `models --update`
+- `models.fallbackUri` - Fallback source for model defaults when the primary source fails or is unreachable
+
+**Configuration File Locations:**
+
+- Workspace: `<project>/.slopctl/config.yml` (committed to repo alongside `tracker.yml`)
+- Global (Linux): `$XDG_CONFIG_HOME/slopctl/config.yml` or `~/.config/slopctl/config.yml`
+- Global (macOS): `~/.config/slopctl/config.yml`
+
+**Precedence:**
+
+Consumer commands (`templates --update`, `agents --update`, `models --update`, `init`, `update`, `merge`) read the effective merged config. For each key, the workspace value wins; if not set there, the global value is used. This allows setting shared defaults globally while overriding per-project as needed.
+
+**Behavior:**
+
+- Configuration persists between sessions
+- `templates --update` command uses `templates.uri` if set and `--from` not specified
+- `agents --update` command uses `agents.uri` if set and `--from` not specified
+- `init` command uses `templates.uri` when downloading missing global templates
+- If primary source fails and `templates.fallbackUri` is configured, automatically tries the fallback
+- If missing during `templates --update`, `agent-defaults.yml` (and `model-defaults.yml`) is bootstrapped from `agents.uri` (`models.uri`), then its configured fallback, then the default `slopctl-templates` repository
+- Empty configuration file is valid (all defaults used)
+- `--list` (without `--global`) annotates each key with `[workspace]` or `[global]` to show its origin
+
+## Core Governance Principles
+
+All templates in this repository enforce these critical rules:
+
+- **Never auto-commit** – Explicit human request required before any commit
+- **Conventional commits** – Standardized commit message format (max 500 chars)
+- **Change logging** – Maintain the append-only "Recent Updates & Decisions" log in `UPDATES.md` (see the `recent-updates` skill)
+- **Single source of truth** – Update only `AGENTS.md`, not reference files
+- **Structured updates** – Preserve file structure: header → timestamp → content; history lives in `UPDATES.md`
+- **No secrets** – Never add credentials, API keys, or sensitive data
+
+## Supported Agents
+
+**Universal Support**: Single AGENTS.md works with all agents following the [agents.md](https://agents.md) standard:
+
+- Claude Code (Anthropic)
+- Cursor (AI code editor)
+- GitHub Copilot (GitHub)
+- Codex (OpenAI)
+- Mistral Vibe
+- OpenCode
+- Pi (earendil-works)
+- Kiro (Amazon Web Services)
+- Goose (Agentic AI Foundation)
+- Cline (Cline Bot Inc.)
+
+One AGENTS.md for all agents. Agent-specific files (e.g. command prompts) reference AGENTS.md when needed. Claude Code, GitHub Copilot, and Cursor additionally get a slim redirect stub (`CLAUDE.md`, `.github/copilot-instructions.md`, `.cursorrules`), since each auto-loads a file of its own before it would otherwise discover AGENTS.md; all three stubs come from one shared template source. Agent-specific [skills](https://agentskills.io) (SKILL.md) can also be defined per agent. The default catalog includes `init-session` support for every built-in agent: Claude, Cursor, Copilot, OpenCode, Pi, and Kiro use their native command/prompt directories; Codex, Vibe, Goose, and Cline use an `init-session` skill because those agents do not provide the same recommended predefined prompt workflow.
+
+## Supported Languages
+
+The default [`templates.yml`](https://github.com/heikopanjas/slopctl-templates/blob/develop/templates/templates.yml) is a starter catalog, not a hard-coded language list. It ships useful examples for common languages, but language support is data-driven: add a new entry under `languages:` and provide the referenced files or skills in your template source.
+
+Currently configured in the default template catalog:
+
+- **C** - C programming language (skills: `c-coding-conventions`, `cmake-build-commands`; config files: `.clang-format`, `.editorconfig`)
+- **C++** - C++ programming language (skills: `cpp-coding-conventions`, `cmake-build-commands`; config files: `.clang-format`, `.editorconfig`)
+- **Rust** - Rust programming language (skills: `rust-coding-conventions`, `rust-build-commands`; config files: `.rustfmt.toml`, `.editorconfig`)
+- **Shell** - Shell scripting for bash and zsh (skills: `shell-coding-conventions`, `shell-build-commands`; no config files)
+- **Swift** - Swift programming language (skills: `swift-coding-conventions`, `swift-build-commands`, `swift-concurrency-pro`, `swift-testing-pro`; config files: `.swift-format`, `.editorconfig`)
+- **SwiftUI** - SwiftUI framework (includes all Swift skills and config files plus `swiftui-pro` skill)
+
+Coding conventions and build commands are installed as [Agent Skills](https://agentskills.io) rather than fragments merged into AGENTS.md. A slim hint fragment is merged into AGENTS.md to inform agents that skills are available. Additional language templates can be added to `templates.yml` configuration.
+
+Supported agents are also data-driven: `agent-defaults.yml` defines agent filesystem conventions (prompt directories, skill directories, workspace detection markers). You can update these defaults with `slopctl agents --update` without recompiling slopctl.
+
+## How It Works
+
+### Template Storage
+
+Templates are stored in a single global cache directory, the same on every platform:
+
+- `$HOME/.cache/slopctl/templates/` — or `$XDG_CACHE_HOME/slopctl/templates/` when
+  `XDG_CACHE_HOME` is set
+
+Templates include:
+
+- **templates.yml**: Configuration file defining structure and file mappings (with version field)
+- **agent-defaults.yml**: Configuration file defining known agent filesystem conventions
+- **model-defaults.yml**: Configuration file defining known LLM provider endpoints, API key env vars, and default models
+- **Main template**: AGENTS.md (primary instruction file)
+- **Language fragments**: Language-specific coding standards and build commands - merged into AGENTS.md
+- **Integration fragments**: Tool/workflow templates (e.g., git-workflow-conventions.md) - merged into AGENTS.md
+- **Principle fragments**: Core principles and best practices - merged into AGENTS.md
+- **Mission fragments**: Mission statement, technology stack - merged into AGENTS.md
+- **Agent templates**: Agent-specific instruction files, prompts, and skills (copied to project directories)
+- **Config files**: EditorConfig, format configurations
+
+### Agent Skills
+
+slopctl supports [Agent Skills](https://agentskills.io) – an open format for extending AI agent capabilities with specialized knowledge and workflows.
+
+A skill is a directory containing a `SKILL.md` file with YAML frontmatter (name, description) and Markdown instructions. Skills can optionally include `scripts/`, `references/`, and `assets/` subdirectories.
+
+**Skills can be defined in four ways:**
+
+1. **Per-agent in templates.yml** – Using `source` under `agents.<name>.skills` (installed to agent-specific skill directory)
+2. **Per-language in templates.yml** – Using `source` under `languages.<name>.skills` (installed to cross-client `.agents/skills/` for cross-client agents)
+3. **Per-shared group in templates.yml** – Using `source` under `shared.<name>.skills` (propagated to including languages via `includes`)
+4. **Top-level in templates.yml** – Agent-agnostic skills under the `skills` section (routing follows the smart default)
+
+**How skills work:**
+
+- All skill definitions use a single `source` field (GitHub URL or local path); the skill name is derived from the source directory name
+- **Agent skills** (`agents.<name>.skills`): installed to the agent's native workspace skill directory (e.g. `.claude/skills/`, `.codex/skills/`, `.cursor/skills/`), regardless of cross-client support
+- **Language skills** (`languages.<name>.skills`): distributed by installed agents — one shared copy in `.agents/skills/` when any cross-client agent is installed; one copy per native-only agent skill dir (e.g. `.claude/skills/`) when native-only agents are installed; `.agents/skills/` only when no agents are installed
+- **Shared group skills** (`shared.<name>.skills`): propagated to any language that includes the shared group via `includes`; same distribution rules as language skills
+- **Language include skills**: skills from an included *language* are also propagated depth-first (e.g. `swiftui` including `swift` inherits `swift`'s skills); cycle detection prevents infinite recursion. See the [`includes` section](#includes-composable-languages-and-shared-groups) for full details.
+- **Top-level skills** (`skills`): same agent-aware distribution as language skills; optional `target: '$userprofile'` installs globally (e.g. `~/.codex/skills`)
+- GitHub skills are cached during `templates --update` via one tarball download per repository (not per file); `init` uses the same tarball path for URL-based skills not yet cached
+- Skills are tracked with the `"skill"` category in the file tracker for modification detection
+- The `templates --list` command shows available skills (including agent and language skill counts); `status` shows installed skills
+- Removing an agent (`slopctl remove --agent <name>`) also removes its skills
+
+**Agent skill directory reference:**
+
+| Agent | Workspace skill dir | Userprofile skill dir | Reads `.agents/skills/` |
+| --- | --- | --- | --- |
+| Cursor | `.cursor/skills/` | — | ✓ |
+| Claude Code | `.claude/skills/` | `~/.claude/skills/` | ✗ |
+| Codex | `.codex/skills/` ¹ | `~/.codex/skills/` | ✓ |
+| Copilot | `.github/skills/` | `~/.copilot/skills/` | ✓ |
+| Mistral Vibe | `.vibe/skills/` ¹ | `~/.vibe/skills/` | ✓ |
+| OpenCode | `.opencode/skills/` | `~/.config/opencode/skills/` | ✓ |
+| Pi | `.pi/skills/` | `~/.pi/agent/skills/` | ✓ |
+| Kiro | `.kiro/skills/` | `~/.kiro/skills/` | ✗ |
+| Goose | `.goose/skills/` | `~/.agents/skills/` | ✓ |
+| Cline | `.cline/skills/` | `~/.cline/skills/` | ✗ |
+
+¹ Codex and Mistral Vibe each scan both their native skill dir and `.agents/skills/`. slopctl installs their agent-specific skills to the native dir; language and top-level skills use `.agents/skills/` to avoid duplication with other cross-client agents.
+
+**slopctl skill routing decisions:**
+
+| How the skill is defined / invoked | Agent context | Installed to |
+| --- | --- | --- |
+| `agents.<name>.skills` in templates.yml | named agent | agent's native workspace skill dir |
+| `languages` / top-level `skills` in templates.yml — `target` omitted or `$workspace` | no agents installed | `.agents/skills/` |
+| `languages` / top-level `skills` in templates.yml — `target` omitted or `$workspace` | cross-client agent(s) installed | `.agents/skills/` |
+| `languages` / top-level `skills` in templates.yml — `target` omitted or `$workspace` | native-only agent(s) installed | each native agent skill dir |
+| `languages` / top-level `skills` in templates.yml — `target` omitted or `$workspace` | mixed cross-client + native-only | `.agents/skills/` plus each native-only copy |
+| `init --agent <native-only>` after language install | native-only agent added later | hydrates installed language skills from templates into agent native dir |
+| Any skill definition — `target: '$userprofile'` | any agent | agent's userprofile skill dir (global exception; see table above) |
+
+**Example per-agent skills in templates.yml:**
+
+```yaml
+agents:
+  cursor:
+    skills:
+      - source: 'https://github.com/user/cursor-skills/tree/main/create-rule'
+        # skill name derived from source: "create-rule"
+```
+
+**Example per-language skills in templates.yml:**
+
+```yaml
+languages:
+  rust:
+    files:
+      - source: rust-coding-conventions.md
+        target: '$instructions'
+    skills:
+      - source: 'https://github.com/user/rust-skills/tree/main/rust-analyzer'
+        # skill name derived from source: "rust-analyzer"
+```
+
+**Example shared group skills in templates.yml (propagated to including languages):**
+
+```yaml
+shared:
+  cmake:
+    files:
+      - source: cmake-build-commands.md
+        target: '$instructions'
+    skills:
+      - source: 'https://github.com/user/cmake-skills/tree/main/cmake-skill'
+        # skill name derived from source: "cmake-skill"
+
+languages:
+  c:
+    includes: [cmake]         # inherits cmake files AND skills
+    files:
+      - source: c-coding-conventions.md
+        target: '$instructions'
+```
+
+**Example top-level skills in templates.yml (agent-agnostic):**
+
+```yaml
+skills:
+  - source: 'https://github.com/user/cursor-skills/tree/main/create-rule'
+    # skill name derived from source: "create-rule"
+  - source: 'skills/my-local-skill'
+    target: '$userprofile'   # optional: global policy install (e.g. ~/.codex/skills)
+    # skill name derived from source: "my-local-skill"
+```
+
+### Agent Directories
+
+Agents can declare workspace directories that should be created during `init`. This is useful for directories that the agent expects to exist but that are not tracked by version control — for example, Cursor's `.cursor/plans` directory for storing agent-generated plans.
+
+**Example in templates.yml:**
+
+```yaml
+agents:
+  cursor:
+    prompts:
+      - source: cursor/commands/init-session.md
+        target: '$workspace/.cursor/commands/init-session.md'
+    directories:
+      - target: '$workspace/.cursor/plans'
+```
+
+When a user runs `slopctl init --agent cursor`, the `.cursor/plans` directory is created in the workspace alongside the usual instruction and prompt files. If the directory already exists, the step is silently skipped. Directories are also shown in `--dry-run` output.
+
+Each entry in `directories` has a single field:
+
+- `target` — Destination path using the standard placeholders (`$workspace`, `$userprofile`)
+
+### Template Configuration (templates.yml)
+
+The `templates.yml` file defines the template structure with a version field and multiple sections:
+
+The [bundled `templates.yml`](https://github.com/heikopanjas/slopctl-templates/blob/develop/templates/templates.yml) should be read as an example catalog. It demonstrates how to model languages, shared groups, agent prompts, integrations, and skills. You can replace or extend the language section for your own stack without changing slopctl itself, as long as the referenced source files exist in your template cache or use explicit full GitHub URLs.
+
+**Version Field:**
+
+- `version: 5` (default) - Agent, language, and shared group skill associations, composable languages
+- Missing version defaults to 5
+- slopctl automatically detects the version from `templates.yml` and uses the appropriate template engine
+- The `status` command shows the installed template version
+
+**Main Sections:**
+
+1. **main**: Main AGENTS.md instruction file (primary source of truth)
+2. **preamble**: Fragments inserted at the very top of AGENTS.md (e.g. session-start guard)
+3. **agents**: Agent-specific files with `instructions`, `prompts`, `skills` (source only; name derived from path), and `directories` (workspace paths to create during init)
+4. **shared**: Reusable file groups with `files` and optional `skills` (skills propagate to including languages via `includes`)
+5. **languages**: Language-specific coding standards fragments (merged into AGENTS.md), with optional `includes` and `skills`
+6. **integration**: Tool/workflow integration groups; entries can be AGENTS.md fragments (e.g. git workflow summary) or real workspace files (e.g. `UPDATES.md`) — installed on every init
+7. **principles**: Core principles and general guidelines fragments (merged into AGENTS.md)
+8. **mission**: Mission statement, purpose, and project overview fragments (merged into AGENTS.md)
+9. **skills**: Agent-agnostic skill definitions with `source` (name derived from path; installed to cross-client `.agents/skills/` for cross-client agents, native dir for native-only agents; optional `target: '$userprofile'` for global installation)
+
+Each file entry specifies:
+
+- `source`: Path in the template repository, or a full GitHub URL (e.g., `https://github.com/user/repo/tree/main/file.md`)
+- `target`: Destination path using placeholders
+
+**Note:** Only full GitHub URLs are supported in `source` fields; `user/repo` shorthand is not supported in `templates.yml`.
+
+This is deliberate. Template sources are declarative supply-chain inputs, so slopctl does not silently reinterpret a missing local path as a GitHub repository. For example, a typo in `source: 'skills/company-internal-review'` should fail loudly instead of reaching out to a remote repository with a similar-looking shorthand. If a skill should come from GitHub, use the full URL so the remote dependency is explicit and reviewable.
+
+**Placeholders:**
+
+- `$workspace` - Resolves to current directory
+- `$userprofile` - Resolves to user's home directory
+- `$instructions` - Indicates fragment to be merged into main AGENTS.md at insertion points
+
+**Fragment Merging:**
+
+Templates using `$instructions` as the target are merged into the main AGENTS.md file at specific insertion points:
+
+- `<!-- {preamble} -->` - Where preamble content is inserted (top of file)
+- `<!-- {mission} -->` - Where mission/purpose and project overview are inserted
+- `<!-- {principles} -->` - Where core principles and guidelines are inserted
+- `<!-- {languages} -->` - Where language-specific coding standards are inserted
+- `<!-- {integration} -->` - Where tool/workflow integration content is inserted
+
+**Example V5 structure (agents.md standard):**
+
+```yaml
+version: 5
+
+main:
+    source: AGENTS.md
+    target: '$workspace/AGENTS.md'
+
+agents:
+    claude:
+        prompts:
+            - source: claude/commands/init-session.md
+              target: '$workspace/.claude/commands/init-session.md'
+    copilot:
+        instructions:
+            - source: copilot/copilot-instructions.md
+              target: '$workspace/.github/copilot-instructions.md'
+    cursor:
+        prompts:
+            - source: cursor/commands/init-session.md
+              target: '$workspace/.cursor/commands/init-session.md'
+        skills:
+            - source: 'https://github.com/user/cursor-skills/tree/main/create-rule'
+        directories:
+            - target: '$workspace/.cursor/plans'
+    codex:
+        skills:
+            - source: 'skills/init-session'
+    vibe:
+        skills:
+            - source: 'skills/init-session'
+    opencode:
+        prompts:
+            - source: opencode/commands/init-session.md
+              target: '$workspace/.opencode/commands/init-session.md'
+
+shared:
+    cmake:
+        files:
+            - source: cmake-build-commands.md
+              target: '$instructions'
+        skills:
+            - source: 'https://github.com/user/cmake-skills/tree/main/cmake-skill'
+
+languages:
+    c:
+        includes: [cmake]
+        files:
+            - source: c-coding-conventions.md
+              target: '$instructions'
+    rust:
+        files:
+            - source: rust-coding-conventions.md
+              target: '$instructions'
+            - source: rust-build-commands.md
+              target: '$instructions'
+            - source: rust-format-instructions.toml
+              target: '$workspace/.rustfmt.toml'
+            - source: rust-editor-config.ini
+              target: '$workspace/.editorconfig'
+            - source: rust-git-ignore.txt
+              target: '$workspace/.gitignore'
+        skills:
+            - source: 'https://github.com/user/rust-skills/tree/main/rust-analyzer'
+
+principles:
+    - source: core-principles.md
+      target: '$instructions'
+
+mission:
+    - source: mission-statement.md
+      target: '$instructions'
+```
+
+**Example custom language: Elixir**
+
+To add Elixir support, add a language entry to your template catalog and provide the referenced files in the same template source. slopctl does not need Elixir-specific code:
+
+```yaml
+languages:
+  elixir:
+    files:
+      - source: elixir-skills-hint.md
+        target: '$instructions'
+      - source: elixir-format.exs
+        target: '$workspace/.formatter.exs'
+      - source: elixir-git-ignore.txt
+        target: '$workspace/.gitignore'
+    skills:
+      - source: 'skills/elixir-coding-conventions'
+        target: '$workspace'
+      - source: 'skills/mix-build-commands'
+        target: '$workspace'
+```
+
+With that catalog installed, `slopctl init --lang elixir` resolves these files and skills the same way as Rust, Swift, or any other language.
+
+### `includes`: Composable Languages and Shared Groups
+
+The `includes` key on a language entry lets you pull in files and skills from other definitions so you don't repeat yourself. There are two kinds of targets you can include, and they behave slightly differently.
+
+#### Kind 1 — Shared groups (`shared` section)
+
+A shared group is a named bucket of files and skills that has no meaning on its own; it only exists to be reused. Think of it like a mixin.
+
+```yaml
+shared:
+  cmake:
+    files:
+      - source: cmake-build-commands.md
+        target: '$instructions'
+    skills:
+      - source: 'https://github.com/user/cmake-skills/tree/main/cmake-skill'
+
+languages:
+  c:
+    includes: [cmake]        # pulls in cmake files AND cmake skills
+    files:
+      - source: c-coding-conventions.md
+        target: '$instructions'
+
+  c++:
+    includes: [cmake]        # same cmake files and skills, no duplication
+    files:
+      - source: cpp-coding-conventions.md
+        target: '$instructions'
+```
+
+When a user runs `slopctl init --lang c++`, they get:
+
+- `cmake-build-commands.md` merged into AGENTS.md (from the cmake shared group)
+- `cpp-coding-conventions.md` merged into AGENTS.md (own file)
+- `cmake-skill` installed (propagated from the shared group)
+
+#### Kind 2 — Other languages (`languages` section)
+
+A language can also include another language. This is useful when one language is a superset of another — for example, SwiftUI is Swift plus extra conventions.
+
+```yaml
+languages:
+  swift:
+    files:
+      - source: swift-coding-conventions.md
+        target: '$instructions'
+      - source: swift-format-instructions.json
+        target: '$workspace/.swiftformat'
+    skills:
+      - source: 'https://github.com/user/swift-skills/tree/main/swift-analyzer'
+
+  swiftui:
+    includes: [swift]        # inherits swift's files AND skills
+    files:
+      - source: swiftui-coding-conventions.md
+        target: '$instructions'
+    skills:
+      - source: 'https://github.com/user/swift-skills/tree/main/swiftui-components'
+```
+
+When a user runs `slopctl init --lang swiftui`, they get everything from `swift` first, then `swiftui`'s own additions on top:
+
+| What gets installed | Source |
+| --- | --- |
+| `swift-coding-conventions.md` → AGENTS.md | inherited from `swift` |
+| `.swiftformat` | inherited from `swift` |
+| `swiftui-coding-conventions.md` → AGENTS.md | own |
+| `swift-analyzer` skill | inherited from `swift` |
+| `swiftui-components` skill | own |
+
+#### Resolution order
+
+Included items always come **before** the language's own items. For multiple includes, they are resolved left to right, depth-first. Example:
+
+```yaml
+languages:
+  base:
+    files: [base.md → $instructions]
+
+  mid:
+    includes: [base]
+    files: [mid.md → $instructions]
+
+  top:
+    includes: [mid]
+    files: [top.md → $instructions]
+```
+
+Installing `top` produces: `base.md`, then `mid.md`, then `top.md` — in that order.
+
+Multiple includes in one language follow the same left-to-right, depth-first rule:
+
+```yaml
+languages:
+  full:
+    includes: [base, mid]   # base resolved first (depth-first), then mid, then own
+    files: [full.md → $instructions]
+```
+
+#### Key rules
+
+| Rule | Detail |
+| --- | --- |
+| **Shared groups propagate skills** | `includes: [my-shared]` → inherits both files and skills from the shared group |
+| **Languages propagate skills** | `includes: [swift]` → inherits both files and skills from `swift` |
+| **No duplicate disk targets** | Two entries targeting the same `$workspace/` path cause an error at init time; `$instructions` fragments are exempt |
+| **Cycle detection** | Circular includes (e.g. `a` includes `b` includes `a`) are caught and reported as an error |
+| **Mixing both kinds** | A language can include a mix of shared groups and other languages: `includes: [cmake, swift]` |
+
+### Template Management
+
+1. **First run**: `templates --update` downloads `templates.yml` and all specified files from GitHub
+2. **Local storage**: Templates are cached in platform-specific directory
+3. **Protection**: Template marker in AGENTS.md detects customization and prevents accidental overwrites
+4. **Updates**: Detect AGENTS.md customization and warn before overwriting
+5. **Placeholders**: `$workspace` and `$userprofile` resolve to appropriate paths
+
+### Project Initialization
+
+When you run `slopctl init --lang rust`:
+
+1. Checks if global templates exist (downloads V5 by default if needed)
+2. Loads `templates.yml` configuration and detects version
+3. Uses TemplateEngine for agents.md standard
+4. Downloads main AGENTS.md template
+5. Merges fragments (mission, principles, skill hints, integration) into AGENTS.md at insertion points
+6. Copies language config files (.rustfmt.toml, .editorconfig) and integration files (UPDATES.md)
+7. Installs language skills (e.g. rust-coding-conventions, rust-build-commands) and top-level skills to `.agents/skills/` (or native agent dirs for Claude/Vibe)
+8. Single AGENTS.md works with all agents
+9. Optional `--agent` adds agent-specific files (e.g. `.cursor/commands/init-session.md`, `.opencode/commands/init-session.md`), agent skills, and creates agent directories (e.g. `.cursor/plans`)
+10. You're ready to start coding with any agent
+
+**Without `--lang`** (language-independent setup):
+
+1. Same as above but skips language skill hints, config files, and language skills
+2. AGENTS.md contains mission, principles, integration (e.g. git, versioning) only
+3. Requires `--agent` to specify which agent prompts or agent-specific skills to set up
+
+**With `--agent` only** (switch agent, preserve language):
+
+1. Detects existing installation language from file tracker
+2. Adds agent prompts, agent-specific skills, and the agent's marker directory
+3. For native-only agents (Claude Code): hydrates the installed languages' skills from templates into the agent's native skill dir
+
+The resulting AGENTS.md contains the complete merged content with all relevant sections for your project.
+
+### Modification Detection
+
+slopctl detects if you've customized AGENTS.md by checking for the template marker:
+
+```bash
+$ slopctl update
+→ Skipping AGENTS.md (customized)
+→ Other files are still refreshed
+→ Use 'slopctl merge' to combine AGENTS.md with template updates
+```
+
+The template marker is automatically removed when fragments are merged into AGENTS.md during initialization. This marks the file as customized and prevents accidental overwrites. Use `--force` to override and update anyway.
+
+## Customization
+
+### Using Custom Templates
+
+You can use your own template repository:
+
+```bash
+# From a local path
+slopctl templates --update --from /path/to/your/templates
+
+# From a GitHub repository
+slopctl templates --update --from https://github.com/yourname/your-templates/tree/main/templates
+
+# Then initialize your project
+slopctl init --lang c++ --agent claude
+```
+
+**Note:** Your custom template repository must include a `templates.yml` file that defines the template structure and file mappings.
+
+### Modifying Global Templates
+
+1. Navigate to the global template cache directory: `$HOME/.cache/slopctl/templates/`
+2. Edit the templates as needed
+3. Run `slopctl update` in your projects to apply the changes
+
+### Creating New Templates
+
+Templates live in the separate [`slopctl-templates`](https://github.com/heikopanjas/slopctl-templates) repository, not here. To add a new language or agent template:
+
+1. Fork [`slopctl-templates`](https://github.com/heikopanjas/slopctl-templates)
+2. Add your template under `templates/`
+3. For languages: Create coding conventions and build commands markdown files
+4. For agents: Create `agent-name/` directory with instructions and prompts
+5. Update `templates/templates.yml` with the new entries
+6. For agents, also add an entry to `defaults/agent-defaults.yml`; an agent that is only in `templates.yml` is rejected by `init` and reported by `templates --verify`
+7. Submit a pull request there
+
+To add an agent for yourself only, without forking, use an [agent overlay](#adding-a-custom-agent).
+
+### Adding a Custom Agent
+
+Add an agent that the default catalog does not ship by creating an overlay directory. Each agent lives in `agents/<name>/agent.yml`, in one of two places:
+
+- Global: `$XDG_CONFIG_HOME/slopctl/agents/<name>/` (or `~/.config/slopctl/agents/<name>/`), available in every workspace
+- Workspace: `<workspace>/.slopctl/agents/<name>/`, which can be committed to share the agent with your team. A workspace overlay wins over a global overlay of the same name
+
+`agent.yml` combines the `agent-defaults.yml` fields with the `templates.yml` agent sections:
+
+```yaml
+# .slopctl/agents/myagent/agent.yml
+markers: [.myagent]                       # directories that signal the agent is in use
+prompt_dir: $workspace/.myagent/commands
+skill_dir: $workspace/.myagent/skills
+reads_cross_client_skills: false          # true if the agent also scans .agents/skills/
+instructions:
+  - source: instructions.md               # relative to this directory
+    target: $workspace/.myagent/instructions.md
+prompts: []
+skills:
+  - source: skills/helper                 # a directory containing SKILL.md
+```
+
+Then use it like any other agent: `slopctl init --agent myagent`, `update`, `merge`, `remove --agent myagent`, `status` and `agents --list` all see it.
+
+Rules:
+
+- Overlays are add-only: a name that matches a shipped agent is an error
+- `name` is optional and must equal the directory name when given; unknown keys are rejected
+- `source` paths are relative to the agent directory. Absolute paths, `..` and URLs are rejected
+- Workspace overlays may only use `$workspace` targets and directories; global overlays may also use `$userprofile`
+- The default templates must still be installed (`slopctl templates --update`); a broken overlay makes slopctl commands fail with an error naming the file
+
+#### Example: add an agent called `acme`
+
+Suppose your team uses an in-house coding agent, `acme`, that reads `.acme/instructions.md` and loads skills from `.acme/skills/`. Create the overlay in the workspace so it can be committed with the project:
+
+```text
+my-project/
+└── .slopctl/
+    └── agents/
+        └── acme/
+            ├── agent.yml
+            ├── instructions.md
+            └── skills/
+                └── team-conventions/
+                    └── SKILL.md
+```
+
+```yaml
+# .slopctl/agents/acme/agent.yml
+markers: [.acme]
+prompt_dir: $workspace/.acme/commands
+skill_dir: $workspace/.acme/skills
+reads_cross_client_skills: false
+instructions:
+  - source: instructions.md
+    target: $workspace/.acme/instructions.md
+skills:
+  - source: skills/team-conventions
+```
+
+Install and manage it with the usual commands:
+
+```bash
+# The overlay shows up next to the built-in agents
+slopctl agents --list
+#   acme (overlay: workspace)
+#     origin: /path/to/my-project/.slopctl/agents/acme
+
+# Install it (AGENTS.md, .acme/instructions.md, .acme/skills/team-conventions)
+slopctl init --agent acme
+
+# After editing the overlay files, refresh the installed copies
+slopctl update
+
+# Check the catalogs and the overlay (missing sources, colliding targets)
+slopctl templates --verify
+
+# Remove only this agent's files
+slopctl remove --agent acme
+```
+
+To make `acme` available in every project on your machine, put the same `acme/` directory under `~/.config/slopctl/agents/` (or `$XDG_CONFIG_HOME/slopctl/agents/`) instead.
+
+## Technology Stack
+
+- **Language:** Rust (Edition 2024)
+- **CLI Framework:** clap v4.5.20
+- **Shell Completions:** clap_complete v4.5
+- **Terminal Colors:** owo-colors v4.1.0
+- **HTTP Client:** reqwest v0.12 (blocking, json)
+- **Serialization:** serde v1.0, serde_yaml v0.9, serde_json v1.0
+- **Error Handling:** anyhow v1.0
+- **Hashing:** sha2 v0.10
+- **Timestamps:** chrono v0.4
+- **Directory Paths:** dirs v5.0
+- **Temp Files:** tempfile v3.13
+- **Tarball Extraction:** flate2 v1.1 + tar v0.4 (pure-Rust skill caching)
+- **Man Pages:** clap_mangen v0.2 (build dependency)
+
+## FAQ
+
+**Where are templates stored?**
+
+- Global templates: `$HOME/.cache/slopctl/templates/` (same on all platforms; honors
+  `$XDG_CACHE_HOME` if set)
+
+**What happens if I modify AGENTS.md?**
+slopctl detects customization via template marker removal and skips AGENTS.md when updating. Use `--force` to override.
+
+**Can I use my own template repository?**
+Yes! Use the `--from` option with the `templates --update` command to specify a local path or GitHub URL.
+
+**Why AGENTS.md as single source of truth?**
+Centralized updates prevent drift and make it easier to maintain consistency across sessions.
+
+**Can I use this in commercial projects?**
+Yes! MIT license allows commercial use. Attribution appreciated but not required.
+
+**How do I update templates?**
+Run `slopctl templates --update` to download the latest global templates, then `slopctl update` to refresh your workspace from the cache (`slopctl merge` for customized files).
+
+**How do I remove local templates?**
+Run `slopctl remove --purge` to remove all agent files and AGENTS.md, or `slopctl remove --all` to keep AGENTS.md.
+
+**How do I remove language config files?**
+Run `slopctl remove --lang <language>` (e.g. `slopctl remove --lang rust`). This removes disk files like `.rustfmt.toml` and `.editorconfig` but does NOT remove language fragments already merged into AGENTS.md.
+
+**How do I fix stale or broken managed files?**
+Run `slopctl doctor` to list issues, or `slopctl doctor --fix` to repair them automatically. Issues detected: missing tracked files (stale tracker entries), unmerged AGENTS.md templates, and modified files (informational). Use `--verbose` to see the result for every tracked file.
+
+**How do I preview changes before applying?**
+Use the `--dry-run` flag on any command: `slopctl init --lang rust --dry-run` or `slopctl init --agent cursor --dry-run`
+
+**How do I customize the mission statement?**
+Use the `--mission` option with `init`. For inline text: `--mission "Your mission here"`. For multi-line content from a file: `--mission @mission.md`. The custom mission replaces the default template placeholder in AGENTS.md.
+
+**What template version should I use?**
+V5 (default) is recommended. It follows the agents.md standard with agent/language skill associations, shared file groups, and composable languages. Run `slopctl status` to see the installed template version.
+
+**What if I don't specify --lang?**
+Omitting `--lang` gives you AGENTS.md with mission, principles, and integration (e.g. git) only—no language-specific coding conventions or config files (.rustfmt.toml, .editorconfig, etc.). Good for documentation repositories, multi-language projects, or when you prefer a minimal setup. Just use `--agent` alone: `slopctl init --agent cursor`.
+
+**How do I switch agents without changing the language?**
+Run `slopctl init --agent <new-agent>`. slopctl detects the existing language from the file tracker and uses it (e.g. switching from Cursor to Claude keeps your Rust setup).
+
+**What are Agent Skills?**
+[Agent Skills](https://agentskills.io) are an open format for giving agents specialized capabilities via SKILL.md files. Skills are defined in `templates.yml` (per-agent, per-language, shared group, or top-level). They can point to local template directories or full GitHub URLs; URL-based skills are cached under `skills/<name>/` during `templates --update` and tracked like other template files.
+
+**How do I install a skill?**
+Add it to the relevant `skills:` section in `templates.yml`, then run `slopctl templates --update` and `slopctl init --lang <lang>` or `slopctl init --agent <agent>`. Language skills install with their language, agent skills install with their agent, and top-level skills install with any init run.
+
+**Where are skills installed?**
+It depends on how the skill is defined and which agents are installed. See the [slopctl skill routing decisions](#agent-skills) table for the full matrix. In short:
+
+- **No agents installed**: language and top-level skills go to `.agents/skills/`
+- **Cross-client agents** (`cursor`, `codex`, `copilot`, `opencode`, `pi`, `goose`): one shared copy in `.agents/skills/`
+- **Native-only agents** (`claude`, `vibe`, `kiro`, `cline`): one copy in the agent's native workspace dir (e.g. `.claude/skills/`) — these agents do not read `.agents/skills/`
+- **Mixed agents**: both the shared `.agents/skills/` copy and native-only copies
+- **Adding a native-only agent after language install**: language skills are hydrated from templates into the agent's native skill dir
+- **Agent-specific skills** (`agents.<name>.skills`): always go to that agent's native workspace dir
+- **Template-defined skills with `target: '$userprofile'`**: agent's userprofile skill dir for explicit global policy installs (e.g. `~/.codex/skills/`)
+
+## Building from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/heikopanjas/slopctl.git
+cd slopctl
+
+# Build in debug mode (for development)
+cargo build
+
+# Run tests
+cargo test
+
+# Run the application
+cargo run -- init --lang rust
+
+# Build in release mode (optimized, generates man pages)
+cargo build --release
+
+# Format code
+cargo fmt
+
+# Run linter
+cargo clippy
+```

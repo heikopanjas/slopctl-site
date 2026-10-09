@@ -1,0 +1,43 @@
+---
+import { getEntry, render } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import Kicker from '../components/Kicker.astro';
+import { REPO } from '../data/site';
+
+const entry = await getEntry('docs', 'documentation');
+if (!entry) throw new Error('Missing docs entry: documentation');
+const { Content, headings } = await render(entry);
+
+// Sidebar: every h2; command sub-headings (h3) are listed under "CLI Commands" only.
+const toc: { slug: string; text: string; children: { slug: string; text: string }[] }[] = [];
+for (const h of headings) {
+	if (h.depth === 2) toc.push({ slug: h.slug, text: h.text, children: [] });
+	else if (h.depth === 3 && toc.length && toc[toc.length - 1].slug === 'cli-commands') toc[toc.length - 1].children.push({ slug: h.slug, text: h.text });
+}
+---
+<Layout title="slopctl documentation" description={entry.data.summary} active="docs">
+<section class="section agent-hero">
+  <div class="section-head">
+    <Kicker num="DOC" text="Reference" />
+    <h1>Documentation</h1>
+    <p class="unit-hw home">{entry.data.summary}</p>
+    <div class="hero-cta">
+      <a class="btn btn-ghost" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/#commands`}>Command pages</a>
+      <a class="btn btn-ghost" href={`${REPO}#readme`}>README on GitHub ↗</a>
+    </div>
+  </div>
+  <div class="docs-layout">
+    <nav class="toc" aria-label="On this page">
+      <ol>
+        {toc.map((s) => (
+          <li>
+            <a href={`#${s.slug}`}>{s.text}</a>
+            {s.children.length > 0 && <ol>{s.children.map((c) => <li><a href={`#${c.slug}`}>{c.text}</a></li>)}</ol>}
+          </li>
+        ))}
+      </ol>
+    </nav>
+    <div class="prose docs"><Content /></div>
+  </div>
+</section>
+</Layout>
