@@ -29,7 +29,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
   <div class="hero-inner">
     <p class="eyebrow">Rust CLI · agents.md standard · MIT{release && <> · <a href={release.url}>{release.tag}</a> · {release.date}</>}</p>
     <h1>One AGENTS.md, <em>every</em> agent.</h1>
-    <p class="lede">One AGENTS.md, ten coding agents, zero drift. slopctl installs, updates, and synchronizes agent instructions and skills across every workspace you touch.</p>
+    <p class="lede">slopctl installs, updates and synchronizes agent instructions and skills across every workspace you touch, so ten coding agents read the same AGENTS.md.</p>
     <div class="hero-cta">
       <a class="btn btn-hot" href="#install"><span class="btn-lamp"></span>Get started</a>
       <a class="btn btn-ghost" href={REPO}>View on GitHub ↗</a>
@@ -58,7 +58,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
 <section class="section" id="install">
   <div class="section-head"><Kicker num="01" text="Install" />
     <h2>Four steps, <em>one</em> file.</h2>
-    <p class="section-intro">From a clean checkout to a configured workspace in under a minute.</p>
+    <p class="section-intro">From a downloaded binary to a configured workspace.</p>
   </div>
   <ol class="steps">
     {steps.map((s) => <li class="reveal"><h3>{s.title}</h3><p>{s.body}</p><Term code={s.code} /></li>)}
@@ -125,7 +125,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
 
 <section class="section" id="faq">
   <div class="section-head"><Kicker num="05" text="FAQ" />
-    <h2>Quick <em>answers</em>.</h2>
+    <h2>Common <em>questions</em>.</h2>
   </div>
   <div class="changelog">
     <ol class="day-list">
@@ -145,7 +145,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
   <div class="outro-inner">
     <Kicker num="06" text="Get it" extra="center" />
     <h2>Stop copying AGENTS.md <em>around</em>.</h2>
-    <p>Install once, init anywhere, and let every agent read the same instructions.</p>
+    <p>Install once, run init in any project, and every agent reads the same instructions.</p>
     <div class="hero-cta"><a class="btn btn-hot" href="#install"><span class="btn-lamp"></span>Install slopctl</a><a class="btn btn-ghost" href={REPO}>Source on GitHub ↗</a></div>
   </div>
 </section>

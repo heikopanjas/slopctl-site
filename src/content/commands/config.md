@@ -26,11 +26,11 @@ slopctl config --global --delete <k>  # Delete from global configuration
 
 ## Options
 
-- `<key>` — configuration key to get (e.g. `templates.uri`)
-- `--set <key> <value>` (`-s`) — set a configuration value
-- `--list` (`-l`) — list all configuration values
-- `--delete <key>` (`-d`) — delete a configuration key
-- `--global` (`-g`) — operate on the global config instead of the workspace config
+- `<key>`: configuration key to get (e.g. `templates.uri`)
+- `--set <key> <value>` (`-s`): set a configuration value
+- `--list` (`-l`): list all configuration values
+- `--delete <key>` (`-d`): delete a configuration key
+- `--global` (`-g`): operate on the global config instead of the workspace config
 
 Configuration keys follow the convention `<command>.<parameter>`, e.g. `templates.uri`
 configures the `templates` command and `merge.provider` configures the `merge` command.
@@ -69,18 +69,18 @@ slopctl config --global --set merge.model claude-sonnet-4-6
 
 ## Valid configuration keys
 
-- `templates.uri` — default template source (URL or local filesystem path) used by
+- `templates.uri`: default template source (URL or local filesystem path) used by
   `templates --update` and `init` when `--from` is not specified
-- `templates.fallbackUri` — fallback source used when the primary source fails or is
+- `templates.fallbackUri`: fallback source used when the primary source fails or is
   unreachable
-- `agents.uri` — default agent defaults source used by `agents --update`; also used by
+- `agents.uri`: default agent defaults source used by `agents --update`; also used by
   `templates --update` when bootstrapping missing agent defaults
-- `agents.fallbackUri` — fallback source for agent defaults
-- `merge.provider` — default LLM provider for `merge` (`openai`, `anthropic`, `ollama`,
+- `agents.fallbackUri`: fallback source for agent defaults
+- `merge.provider`: default LLM provider for `merge` (`openai`, `anthropic`, `ollama`,
   `mistral`)
-- `merge.model` — default model for `merge` (e.g. `gpt-5.6-terra`, `claude-sonnet-5`)
-- `models.uri` — default model defaults source used by `models --update`
-- `models.fallbackUri` — fallback source for model defaults
+- `merge.model`: default model for `merge` (e.g. `gpt-5.6-terra`, `claude-sonnet-5`)
+- `models.uri`: default model defaults source used by `models --update`
+- `models.fallbackUri`: fallback source for model defaults
 
 ## Configuration file locations
 

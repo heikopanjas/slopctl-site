@@ -15,7 +15,7 @@ slopctl completions <shell>
 
 ## Arguments
 
-- `<shell>` — shell to generate completions for: `bash`, `zsh`, `fish`, `powershell`
+- `<shell>`: shell to generate completions for: `bash`, `zsh`, `fish`, `powershell`
 
 ## Examples
 

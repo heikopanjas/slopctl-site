@@ -12,7 +12,7 @@ const { Content, headings } = await render(entry);
 const toc: { slug: string; text: string; children: { slug: string; text: string }[] }[] = [];
 for (const h of headings) {
 	if (h.depth === 2) toc.push({ slug: h.slug, text: h.text, children: [] });
-	else if (h.depth === 3 && toc.length && toc[toc.length - 1].slug === 'cli-commands') toc[toc.length - 1].children.push({ slug: h.slug, text: h.text });
+	else if (h.depth === 3 && toc.length && toc[toc.length - 1].slug === 'command-reference') toc[toc.length - 1].children.push({ slug: h.slug, text: h.text });
 }
 ---
 <Layout title="slopctl documentation" description={entry.data.summary} active="docs">

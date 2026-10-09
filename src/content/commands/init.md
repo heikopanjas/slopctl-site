@@ -21,15 +21,15 @@ slopctl init --agent <agent> [--mission <text|@file>] [--force] [--dry-run]
 
 ## Options
 
-- `--lang <string>` — programming language or framework (e.g. `c++`, `rust`, `shell`,
+- `--lang <string>`: programming language or framework (e.g. `c++`, `rust`, `shell`,
   `swift`, `c`). Optional; omit for language-independent setup
-- `--agent <string>` — AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`).
+- `--agent <string>`: AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`).
   Optional; when specified alone, preserves the existing language when switching agents
-- `--mission <string>` — custom mission statement to override the template default. Use
+- `--mission <string>`: custom mission statement to override the template default. Use
   `@filename` to read from a file (e.g. `--mission @mission.md`)
-- `--force` — force overwrite of local files without confirmation; also bypasses the
+- `--force`: force overwrite of local files without confirmation; also bypasses the
   already-initialized guard for reinstalls
-- `--dry-run` — preview changes without applying them
+- `--dry-run`: preview changes without applying them
 
 ## Examples
 

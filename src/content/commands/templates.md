@@ -18,14 +18,14 @@ slopctl templates --update --verify --list
 
 ## Options
 
-- `--update` / `-u` — download or update global templates from source
-- `--verify` / `-V` — validate the local template catalog (YAML structure, local file
+- `--update` / `-u`: download or update global templates from source
+- `--verify` / `-V`: validate the local template catalog (YAML structure, local file
   integrity, source freshness). Returns a non-zero exit code if any issue is found (useful
   for CI)
-- `--list` / `-l` — show available agents, languages, and skills
-- `--from` / `-f` — path or URL used by `--update` (download source) and `--verify`
+- `--list` / `-l`: show available agents, languages, and skills
+- `--from` / `-f`: path or URL used by `--update` (download source) and `--verify`
   (freshness check)
-- `--dry-run` / `-n` — preview what would be downloaded (requires `--update`)
+- `--dry-run` / `-n`: preview what would be downloaded (requires `--update`)
 
 At least one of `--update`, `--verify`, or `--list` is required. All three can be combined;
 execution order is `--update` → `--verify` → `--list`.
@@ -65,17 +65,17 @@ slopctl templates --update --verify --list
   `https://github.com/heikopanjas/slopctl-templates/tree/develop/templates`
 - Downloads `templates.yml` and all template files
 - Stores templates in the global cache directory: `$HOME/.cache/slopctl/templates`
-  (`$XDG_CACHE_HOME/slopctl/templates` if `XDG_CACHE_HOME` is set) — same on all platforms
+  (`$XDG_CACHE_HOME/slopctl/templates` if `XDG_CACHE_HOME` is set), same on all platforms
 - With `--dry-run`, shows the source URL and target directory without downloading
 - Overwrites existing global templates with new versions
 - Does **not** modify any files in the current project directory
 
 **`--verify` checks three things in sequence:**
 
-- **YAML structure** — parses `templates.yml`, checks version, checks for duplicate targets
-- **Local file integrity** — every non-URL `source` referenced in `templates.yml` must exist
+- **YAML structure**: parses `templates.yml`, checks version, checks for duplicate targets
+- **Local file integrity**: every non-URL `source` referenced in `templates.yml` must exist
   in the local cache
-- **Source freshness** — fetches `templates.yml` from the configured source and compares it
+- **Source freshness**: fetches `templates.yml` from the configured source and compares it
   with the local copy; a mismatch recommends `slopctl templates --update`
 
 Run `templates --update` first to download templates before using `init` to set up a project.

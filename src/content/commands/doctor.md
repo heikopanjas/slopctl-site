@@ -17,10 +17,10 @@ slopctl doctor [--fix] [--dry-run] [--verbose] [--smart]
 
 ## Options
 
-- `--fix` — automatically repair detected issues where safe to do so
-- `--dry-run` — preview what would be fixed without applying changes
-- `--verbose` — print every checked file and its result during the scan
-- `--smart` — run AI-assisted linting of `AGENTS.md` after the standard checks; provider
+- `--fix`: automatically repair detected issues where safe to do so
+- `--dry-run`: preview what would be fixed without applying changes
+- `--verbose`: print every checked file and its result during the scan
+- `--smart`: run AI-assisted linting of `AGENTS.md` after the standard checks; provider
   resolved from config `merge.provider` or env API keys
 
 ## Issue categories
@@ -33,12 +33,12 @@ slopctl doctor [--fix] [--dry-run] [--verbose] [--smart]
 
 **What `--fix` repairs:**
 
-- **Missing** — prunes the stale file-tracker entry; no filesystem change, run
+- **Missing**: prunes the stale file-tracker entry; no filesystem change, run
   `slopctl update` to restore the file
-- **Unmerged** — strips the template marker from the file in place, marking it as customized
+- **Unmerged**: strips the template marker from the file in place, marking it as customized
   so future installs won't silently overwrite it; run `slopctl merge` afterward for a full
   re-merge with language sections
-- **Modified** — no automatic fix; shown as informational. Use `slopctl merge` to combine, or
+- **Modified**: no automatic fix; shown as informational. Use `slopctl merge` to combine, or
   `slopctl update --force` to overwrite if intended
 
 ## Examples

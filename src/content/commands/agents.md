@@ -20,12 +20,12 @@ slopctl agents --update --verify --list
 
 ## Options
 
-- `--update` / `-u` — download or update global agent defaults from source
-- `--verify` / `-V` — validate local `agent-defaults.yml` and compare it with the configured
+- `--update` / `-u`: download or update global agent defaults from source
+- `--verify` / `-V`: validate local `agent-defaults.yml` and compare it with the configured
   source
-- `--list` / `-l` — show known agents and their default prompt, skill, and marker paths
-- `--from` / `-f` — path or URL used by `--update` and `--verify`
-- `--dry-run` / `-n` — preview what would be downloaded (requires `--update`)
+- `--list` / `-l`: show known agents and their default prompt, skill, and marker paths
+- `--from` / `-f`: path or URL used by `--update` and `--verify`
+- `--dry-run` / `-n`: preview what would be downloaded (requires `--update`)
 
 At least one of `--update`, `--verify`, or `--list` is required. All three can be combined;
 execution order is `--update` → `--verify` → `--list`.

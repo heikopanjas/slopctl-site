@@ -26,17 +26,17 @@ slopctl remove --purge [--force] [--dry-run]
 
 ## Options
 
-- `--agent <string>` — AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`)
-- `--lang <string>` — language to remove disk files and language-associated skills for (e.g.
+- `--agent <string>`: AI coding agent (e.g. `claude`, `copilot`, `codex`, `cursor`)
+- `--lang <string>`: language to remove disk files and language-associated skills for (e.g.
   `rust`, `c++`, `shell`, `swift`). Skips `$instructions` fragments (merged into
   `AGENTS.md`) and `$userprofile` paths unless tracked in the workspace
-- `--all` — remove all agent-specific files and skills (keeps `AGENTS.md`). Mutually
+- `--all`: remove all agent-specific files and skills (keeps `AGENTS.md`). Mutually
   exclusive with `--agent`, `--lang`, and `--purge`
-- `--purge` — remove all slopctl files including `AGENTS.md` (full cleanup). Mutually
+- `--purge`: remove all slopctl files including `AGENTS.md` (full cleanup). Mutually
   exclusive with `--agent`, `--lang`, and `--all`
-- `--force` — force removal without confirmation; combined with `--purge`, also overrides the
+- `--force`: force removal without confirmation; combined with `--purge`, also overrides the
   customized-`AGENTS.md` preservation guard
-- `--dry-run` — preview what would be deleted without making changes
+- `--dry-run`: preview what would be deleted without making changes
 
 ## Examples
 

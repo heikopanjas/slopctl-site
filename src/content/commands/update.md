@@ -13,7 +13,7 @@ report (use `--force` to overwrite them). With `--file`/`--skill` selectors it r
 the selected targets.
 
 Run `slopctl templates --update` first to refresh the global catalog. `update` never fetches
-from GitHub or other remote sources — it copies only the selected targets from that cache
+from GitHub or other remote sources. It copies only the selected targets from that cache
 into the workspace.
 
 Files and skills are routed to the same workspace locations as `init`. The scope defaults to
@@ -23,7 +23,7 @@ customized or untracked selected target is an error unless `--force` is given; i
 full-workspace mode such files are skipped with a report instead.
 
 In full-workspace mode, a missing agent instruction or prompt file is only recreated for an
-agent that owns at least one tracker entry — never for an agent known solely from its marker
+agent that owns at least one tracker entry, never for an agent known solely from its marker
 directory. Files it refuses to create for that reason are reported per agent with a
 `slopctl init --agent <name>` hint, and `--force` does not override this.
 
@@ -54,15 +54,15 @@ slopctl update --skill git-workflow --dry-run       # Preview without writing
 
 ## Options
 
-- `--file <path>` — workspace file path to refresh (repeatable)
-- `--skill` / `-s <name>` — skill name to refresh (repeatable)
-- `--lang` / `-l` — language scope override (defaults to the installed languages)
-- `--agent` / `-a` — AI coding agent scope override (defaults to detected agents)
-- `--force` / `-f` — overwrite locally customized or untracked files
-- `--dry-run` / `-n` — preview changes without applying them
+- `--file <path>`: workspace file path to refresh (repeatable)
+- `--skill` / `-s <name>`: skill name to refresh (repeatable)
+- `--lang` / `-l`: language scope override (defaults to the installed languages)
+- `--agent` / `-a`: AI coding agent scope override (defaults to detected agents)
+- `--force` / `-f`: overwrite locally customized or untracked files
+- `--dry-run` / `-n`: preview changes without applying them
 
 A `--file` path that lives inside a skill directory is rejected with a hint to use
-`--skill <name>` instead — skills refresh as whole units so upstream-removed files get
+`--skill <name>` instead. Skills refresh as whole units so upstream-removed files get
 pruned. Without `--file`/`--skill` the whole workspace is refreshed. `AGENTS.md` and
 changelog-marker files are excluded from both modes, under `--force` too; `--file UPDATES.md`
 is a hard error; `merge` is the only command that refreshes the template half above the
