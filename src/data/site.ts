@@ -19,12 +19,20 @@ export const standards = [
 export const steps = [
 	{
 		title: 'Install',
-		body: 'Build from source with Cargo.',
-		code: `git clone https://github.com/heikopanjas/slopctl.git
-cd slopctl
-cargo build --release
-sudo cp target/release/slopctl /usr/local/bin/
-# or: cargo install --path .`
+		body: 'Download the binary for macOS, Linux or Windows from GitHub Releases. Prefer building it yourself? Use Cargo.',
+		code: `# macOS (use slopctl-linux.zip on Linux)
+curl -LO https://github.com/heikopanjas/slopctl/releases/latest/download/slopctl-macos.zip
+unzip slopctl-macos.zip
+chmod +x slopctl
+sudo mv slopctl /usr/local/bin/
+
+# Windows (PowerShell), then add the folder to your PATH
+Invoke-WebRequest https://github.com/heikopanjas/slopctl/releases/latest/download/slopctl-windows.zip -OutFile slopctl-windows.zip
+Expand-Archive slopctl-windows.zip -DestinationPath $env:LOCALAPPDATA\\slopctl
+
+# Or build from source
+git clone https://github.com/heikopanjas/slopctl.git
+cd slopctl && cargo install --path .`
 	},
 	{
 		title: 'Download the template catalog',
@@ -90,5 +98,6 @@ export const faq: { q: string; a: string }[] = [
 	{ q: 'How do I fix stale or broken managed files?', a: 'Run <code>slopctl doctor</code> to list issues and <code>slopctl doctor --fix</code> to repair them. <code>--smart</code> adds LLM linting of AGENTS.md.' },
 	{ q: 'Where are skills installed?', a: 'Cross-client agents (cursor, codex, copilot, opencode, pi, goose) share <code>.agents/skills/</code>. Native-only agents (claude, vibe, kiro, cline) get a copy in their own folder, such as <code>.claude/skills/</code>.' },
 	{ q: 'Can I define my own agent?', a: 'Yes. Create <code>agents/&lt;name&gt;/agent.yml</code> under <code>.slopctl/</code> in your workspace (commit it to share with the team) or under <code>~/.config/slopctl/</code> for every project. Then use <code>slopctl init --agent &lt;name&gt;</code> like any built-in agent. See <a href="commands/agents/">the agents command</a>.' },
+	{ q: 'Which platforms are supported?', a: 'macOS, Linux and Windows. Prebuilt binaries are attached to every <a href="https://github.com/heikopanjas/slopctl/releases">GitHub release</a> as <code>slopctl-macos.zip</code>, <code>slopctl-linux.zip</code> and <code>slopctl-windows.zip</code>.' },
 	{ q: 'Can I use this commercially?', a: 'Yes. MIT license.' }
 ];
