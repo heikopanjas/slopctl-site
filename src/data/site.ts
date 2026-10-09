@@ -7,7 +7,7 @@ export const accents = ['teal', 'violet', 'amber', 'green', 'blue', 'rose'] as c
 export const tldr = [
 	{ tag: 'One source', title: 'One AGENTS.md', body: 'A single AGENTS.md works across every agent that follows the agents.md standard. Agent-specific files only reference it.' },
 	{ tag: 'Skills', title: 'Agent Skills built in', body: 'Define skills per agent, per language, or top-level. Local directories and full GitHub URLs both work, routed to the right folder for each agent.' },
-	{ tag: 'Catalog', title: 'Data, not code', body: 'Agents and languages are entries in YAML. Add a new one by editing templates.yml. No rebuild required.' },
+	{ tag: 'Extend', title: 'User-defined agents', body: 'Add your own agent with a small agent.yml overlay, in the workspace or your global config. Languages and agents are YAML entries too: no rebuild, no fork.' },
 	{ tag: 'Merge', title: 'AI-assisted merge', body: 'Reconcile customized files with updated templates using OpenAI, Anthropic, Ollama, or Mistral. Never a blind overwrite.' }
 ];
 
@@ -89,5 +89,6 @@ export const faq: { q: string; a: string }[] = [
 	{ q: 'How do I remove things?', a: '<code>slopctl remove --agent claude</code>, <code>--lang rust</code>, <code>--all</code> (keeps AGENTS.md) or <code>--purge</code> (everything).' },
 	{ q: 'How do I fix stale or broken managed files?', a: 'Run <code>slopctl doctor</code> to list issues and <code>slopctl doctor --fix</code> to repair them. <code>--smart</code> adds LLM linting of AGENTS.md.' },
 	{ q: 'Where are skills installed?', a: 'Cross-client agents (cursor, codex, copilot, opencode, pi, goose) share <code>.agents/skills/</code>. Native-only agents (claude, vibe, kiro, cline) get a copy in their own folder, such as <code>.claude/skills/</code>.' },
+	{ q: 'Can I define my own agent?', a: 'Yes. Create <code>agents/&lt;name&gt;/agent.yml</code> under <code>.slopctl/</code> in your workspace (commit it to share with the team) or under <code>~/.config/slopctl/</code> for every project. Then use <code>slopctl init --agent &lt;name&gt;</code> like any built-in agent. See <a href="commands/agents/">the agents command</a>.' },
 	{ q: 'Can I use this commercially?', a: 'Yes. MIT license.' }
 ];

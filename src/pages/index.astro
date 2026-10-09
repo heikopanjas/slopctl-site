@@ -93,7 +93,7 @@ const ac = (i: number) => `var(--${accents[i % accents.length]})`;
 <section class="section" id="agents">
   <div class="section-head"><Kicker num="03" text="Agents & languages" />
     <h2>{agents.length} agents, <em>zero</em> drift.</h2>
-    <p class="section-intro">A single AGENTS.md works with every agent following the agents.md standard. Claude Code, Cursor and Copilot also get a slim redirect stub, since each auto-loads its own file first. Session prompts use native folders where agents have them and an init-session skill where they don't.</p>
+    <p class="section-intro">A single AGENTS.md works with every agent following the agents.md standard. Claude Code, Cursor and Copilot also get a slim redirect stub, since each auto-loads its own file first. Need one that isn't listed? Define your own agent with a small agent.yml overlay, no fork required. Session prompts use native folders where agents have them and an init-session skill where they don't.</p>
   </div>
   <div class="stage">
     <div class="coverage" style={`--cols:${coverageCols.length}`} role="group" aria-label="Agent support matrix">
