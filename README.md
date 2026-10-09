@@ -2,7 +2,7 @@
 
 The landing page and command reference for [slopctl](https://github.com/heikopanjas/slopctl),
 built with [Astro](https://astro.build) and published to GitHub Pages at
-**[heikopanjas.github.io/slopctl-site](https://heikopanjas.github.io/slopctl-site/)**.
+**[slopctl.me](https://slopctl.me/)**.
 
 The visual design (dark studio-console look, Instrument Serif / Inter Tight / JetBrains Mono)
 follows [agent-capabilities](https://heikopanjas.github.io/agent-capabilities/);
@@ -24,7 +24,7 @@ catalog gains an agent or language, update the matching file here too.
 
 ```bash
 npm install
-npm run dev       # http://localhost:4321/slopctl-site/
+npm run dev       # http://localhost:4321/
 npm run build     # outputs to dist/
 npm run preview
 ```
@@ -34,7 +34,9 @@ npm run preview
 ## Deployment
 
 Pushes to `main` run `.github/workflows/pages.yml`, which builds the site and deploys it
-with GitHub Pages (Settings → Pages → Source: GitHub Actions).
+with GitHub Pages (Settings → Pages → Source: GitHub Actions). The custom domain `slopctl.me` is set in
+Pages settings and in `public/CNAME`; DNS is at Hover (four `A` records to GitHub, `www` CNAME to
+`heikopanjas.github.io`).
 
 The build reads the latest slopctl release from the GitHub API and shows it in the hero. A
 rebuild is triggered by a `slopctl-release` repository dispatch, by a daily schedule as a
