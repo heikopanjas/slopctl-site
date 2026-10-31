@@ -1,6 +1,7 @@
 export const REPO = 'https://github.com/heikopanjas/slopctl';
 export const SITE_REPO = 'https://github.com/heikopanjas/slopctl-site';
 export const TEMPLATES_REPO = 'https://github.com/heikopanjas/slopctl-templates';
+export const AGENT_CAPS = 'https://heikopanjas.github.io/agent-capabilities/';
 
 export const accents = ['teal', 'violet', 'amber', 'green', 'blue', 'rose'] as const;
 

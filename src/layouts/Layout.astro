@@ -1,5 +1,5 @@
 ---
-import { REPO, SITE_REPO } from '../data/site';
+import { AGENT_CAPS, REPO, SITE_REPO } from '../data/site';
 const { title, description, bodyClass = '', active = '' } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 const nav = [
@@ -38,6 +38,7 @@ const favicon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://w
   <a class="brand" href={base}><span class="lamp" id="lamp"></span><span class="brand-text">SLOP <b>✦</b> CTL</span></a>
   <nav class="chapters" aria-label="Sections">{nav.map(([k, l, h]) => <a href={h} class={k === active ? 'active' : undefined}>{l}</a>)}</nav>
   <div class="top-actions">
+    <a class="chip chip-sister" href={AGENT_CAPS}><span class="chip-dot dot-teal"></span>Agent Capabilities</a>
     <a class="chip" href={`${REPO}/releases`}><span class="chip-dot dot-amber"></span>Releases</a>
     <a class="chip" href={REPO}><span class="chip-dot"></span>GitHub</a>
   </div>
@@ -47,7 +48,7 @@ const favicon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://w
   <div><b>slopctl</b><br><span class="mono-fine">agents.md manager</span></div>
   <div>
     <p>A Rust CLI that installs, updates, and synchronizes agent instructions and skills across every workspace you touch.</p>
-    <p class="fine"><a href={REPO}>slopctl</a> · <a href={SITE_REPO}>Site source</a> · MIT © 2026 Heiko Panjas</p>
+    <p class="fine"><a href={REPO}>slopctl</a> · <a href={SITE_REPO}>Site source</a> · <a href={AGENT_CAPS}>Agent Capabilities</a> · MIT © 2026 Heiko Panjas</p>
   </div>
 </footer>
 </body>
